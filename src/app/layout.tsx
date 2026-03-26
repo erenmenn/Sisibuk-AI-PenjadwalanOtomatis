@@ -15,8 +15,8 @@ const syne = Syne({
 });
 
 export const metadata: Metadata = {
-  title: "jadwal.ai — Asisten Jadwal AI",
-  description: "Ngobrol sama jadwal kamu. Asisten jadwal AI yang berpikir bareng kamu.",
+  title: "SISIBUK-Asisten Jadwal Cerdas",
+  description: "Ngobrol sama jadwal kamu. Asisten produktivitas AI paling cerdas.",
 };
 
 export default function RootLayout({

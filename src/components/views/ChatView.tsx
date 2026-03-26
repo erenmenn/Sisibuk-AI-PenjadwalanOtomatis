@@ -180,17 +180,78 @@ export default function ChatView() {
         addMessage({ role: "assistant", content: `Keren! Kamu mau belajar **${topics.length} topik** 🧠\n\n${topics.map((t, i) => `${i+1}. **${t}**`).join("\n")}\n\nMau dipelajari **bersamaan di satu waktu** atau masing-masing di **hari berbeda**?` });
         setIsAiTyping(false); return;
       }
-      const result = await classifyIntent(userMsg, schedules, classSchedules);
-      if (result.intent === "UNKNOWN" || !result.schedule) {
-        addMessage({ role: "assistant", content: `Hmm, belum nangkep 🤔 Coba ceritakan lebih detail:\n\n- *"Besok ada kuliah jam 8"*\n- *"Kumpul tugas SI Jumat malam"*\n- *"Besok pagi lari jam 6"*\n- *"Aku mau belajar RAG, MCP, dan AI Agent"*` });
-      } else {
-        const newSch = addSchedule({ title: result.schedule.title, type: result.intent, createdVia: "chat", deadlineAt: result.schedule.deadline_date ? `${result.schedule.deadline_date}T${result.schedule.deadline_time || "23:59"}` : null });
-        addXP(10, "Tambah jadwal");
-        const intent = INTENT_LABELS[result.intent] || INTENT_LABELS.UNKNOWN;
-        const dateStr = result.schedule.deadline_date ? format(new Date(result.schedule.deadline_date), "EEEE, d MMMM yyyy", { locale: id }) : "Belum ada tenggat";
-        addMessage({ role: "assistant", content: `${intent.emoji} **${result.schedule.title}** sudah dicatat!\n\n📅 ${dateStr}\n🏷️ *${intent.label}*\n\n**+10 XP** 🎉`, relatedScheduleId: newSch.id, xpEarned: 10 });
+      const chatContext = messages.map(m => ({ 
+         role: m.role, 
+         // Bersihkan tempelan string dari chat lama agar LLaMA tidak menirunya
+         content: m.content.replace(/\n\n📅.*|\n\n🏷️.*|\n\n\*\*?\+10 XP\*\*?.*/g, '').trim() 
+      }));
+      const result = await classifyIntent(userMsg, schedules, classSchedules, chatContext as any);
+      
+      // Jika AI mutuskan ini pure ngobrol / query aja
+      if (result.action === "QUERY_SCHEDULE" || result.action === "NONE" || result.intent === "QUERY") {
+         addMessage({ role: "assistant", content: result.reply });
+         setIsAiTyping(false); return;
       }
-    } catch { addMessage({ role: "assistant", content: "Koneksi ke LLaMA lagi bermasalah 😵 Coba lagi!" }); }
+
+      // Action CREATE_SCHEDULE
+      if (!result.schedule || !result.schedule.title) {
+        addMessage({ role: "assistant", content: result.reply || "Hmm, belum nangkep jadwal apa. Coba kasih judul & tanggalnya ya." });
+        setIsAiTyping(false); return;
+      }
+
+      // Default date to +5 days if null
+      let finalDate = result.schedule.deadline_date;
+      if (!finalDate || finalDate.trim() === "" || finalDate === "null") {
+         finalDate = format(addDays(new Date(), 5), "yyyy-MM-dd");
+      }
+      
+      // Validasi string biar ga error di new Date()
+      if (isNaN(new Date(finalDate).getTime())) {
+         finalDate = format(addDays(new Date(), 5), "yyyy-MM-dd");
+      }
+
+      const deadlineAt = `${finalDate}T${result.schedule.deadline_time || "23:59"}`;
+      
+      // Deteksi tabrakan jadwal (<= 30 menit)
+      const newTime = new Date(deadlineAt).getTime();
+      const conflictMsg = schedules.find(s => {
+         if (!s.deadlineAt || s.isCompleted) return false;
+         const existingTime = new Date(s.deadlineAt).getTime();
+         return Math.abs(newTime - existingTime) <= 30 * 60 * 1000;
+      });
+
+      const newSch = addSchedule({ 
+         title: result.schedule.title, 
+         type: result.intent, 
+         createdVia: "chat", 
+         deadlineAt 
+      });
+      addXP(10, "Tambah jadwal");
+      
+      const intentObj = INTENT_LABELS[result.intent] || INTENT_LABELS.UNKNOWN;
+      const dateStr = format(new Date(finalDate), "EEEE, d MMMM yyyy", { locale: id });
+      
+      // Kasih reply sesuai jawaban AI
+      let assistantReply = result.reply;
+      if (!assistantReply || assistantReply.length < 5) {
+         assistantReply = `Jadwal **${result.schedule.title}** sudah berhasil dicatat! ✨`;
+      }
+
+      if (conflictMsg && result.schedule.deadline_time) {
+         assistantReply += `\n\n⚠️ **Hati-hati:** Jadwal ini sangat berdekatan (selisih <30 menit) dengan jadwalmu yang lain: **${conflictMsg.title}**. Pastikan pembagian waktumu aman ya!`;
+      }
+      
+      addMessage({ 
+         role: "assistant", 
+         content: assistantReply, 
+         relatedScheduleId: newSch.id, 
+         xpEarned: 10 
+      });
+
+    } catch (err: any) { 
+       console.error(err);
+       addMessage({ role: "assistant", content: "Koneksi ke AI bermasalah atau formatnya aneh 😵 Coba ketik lebih simpel ya." }); 
+    }
     finally { setIsAiTyping(false); }
   };
 
@@ -234,8 +295,38 @@ export default function ChatView() {
                     <div className={`prose prose-sm max-w-none leading-relaxed prose-p:my-0.5 font-bold ${msg.role === "user" ? "prose-invert" : "prose-p:text-[#1e1b4b] prose-strong:text-purple-700"}`}>
                       <ReactMarkdown>{msg.content}</ReactMarkdown>
                     </div>
-                    {msg.xpEarned && (
-                      <span className="mt-2 inline-block bg-[#10B981] text-white shadow-[0_0_12px_rgba(16,185,129,0.8)] text-[10px] font-black px-2.5 py-1 rounded-full border border-white/40">+{msg.xpEarned} XP ✨</span>
+                    {/* Render Badges Beneath the text */}
+                    {(msg.relatedScheduleId || msg.xpEarned) && (
+                      <div className="flex flex-wrap gap-2 mt-3 items-center">
+                        {msg.relatedScheduleId && msg.relatedScheduleId !== "pending" && schedules.find(s => s.id === msg.relatedScheduleId) && (
+                          (() => {
+                            const sch = schedules.find(s => s.id === msg.relatedScheduleId)!;
+                            const intentObj = INTENT_LABELS[sch.type] || INTENT_LABELS.UNKNOWN;
+                            const dateObj = sch.deadlineAt ? new Date(sch.deadlineAt) : null;
+                            const isMidnight = dateObj && dateObj.getHours() === 23 && dateObj.getMinutes() === 59;
+                            const timeStr = dateObj ? format(dateObj, isMidnight ? "EEEE, dd MMM yyyy" : "EEEE, dd MMM • HH:mm", { locale: id }) : "Belum ada tenggat";
+                            
+                            return (
+                              <>
+                                <span 
+                                  className="inline-block text-[10px] font-black px-2.5 py-1 rounded-full border border-white/20" 
+                                  style={{ backgroundColor: intentObj.color, color: "white", boxShadow: `0 0 12px ${intentObj.color}80` }}
+                                >
+                                  {intentObj.emoji} {intentObj.label}
+                                </span>
+                                <span className="inline-block bg-gray-100 text-gray-700 text-[10px] font-bold px-2.5 py-1 rounded-full shadow-sm border border-gray-200">
+                                  📅 {timeStr}
+                                </span>
+                              </>
+                            );
+                          })()
+                        )}
+                        {msg.xpEarned && (
+                          <span className="inline-block bg-[#10B981] text-white shadow-[0_0_12px_rgba(16,185,129,0.8)] text-[10px] font-black px-2.5 py-1 rounded-full border border-white/40">
+                            +{msg.xpEarned} XP ✨
+                          </span>
+                        )}
+                      </div>
                     )}
                   </div>
                 </div>

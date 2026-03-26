@@ -9,38 +9,43 @@ import { useAppStore } from "./store";
 // ──────────────────────────────────────────────────────────────
 // System prompt for Groq
 // ──────────────────────────────────────────────────────────────
-function buildSystemPrompt(): string {
+function buildSystemPrompt(schedules: Schedule[]): string {
   const today = new Date().toISOString().split("T")[0];
-  return `Kamu adalah AI classifier untuk aplikasi jadwal mahasiswa bernama "jadwal.ai".
+  const activeSch = schedules.filter(s => !s.isCompleted).map(s => `- ${s.title} (${s.deadlineAt || "no date"})`).join("\n");
+  
+  return `Kamu adalah AI assistant produktivitas bernama "MILKUN.AI".
+Tugasmu: Pahami pesan user lalu balas dalam format JSON murni.
 
-TUGASMU: Analisis pesan user dan kembalikan HANYA JSON (tidak ada teks lain, tidak ada markdown, tidak ada penjelasan — hanya JSON murni).
-
-JSON SCHEMA yang harus kamu ikuti persis:
+JSON SCHEMA:
 {
-  "intent": <salah satu dari: DEADLINE_SUBMIT | DEADLINE_REGISTER | EXAM | STUDY_PLAN | STUDY_SESSION | MEETING | CLASS | PERSONAL | QUERY | UNKNOWN>,
-  "action": <salah satu dari: CREATE_SCHEDULE | CREATE_STUDY_PLAN | QUERY_SCHEDULE | MARK_COMPLETE | NONE>,
-  "confidence": <angka 0.0 sampai 1.0>,
+  "intent": <salah satu: DEADLINE_SUBMIT, DEADLINE_REGISTER, EXAM, STUDY_PLAN, STUDY_SESSION, MEETING, CLASS, PERSONAL, RUNNING, SPORT, WORKOUT, QUERY, UNKNOWN>,
+  "action": <salah satu: CREATE_SCHEDULE, CREATE_STUDY_PLAN, QUERY_SCHEDULE, NONE>,
+  "confidence": <0.0 - 1.0>,
   "schedule": {
-    "title": <judul singkat jadwal>,
-    "deadline_date": <"YYYY-MM-DD" atau null>,
-    "deadline_time": <"HH:MM" atau null, default "23:59" untuk deadline>,
-    "priority": <HIGH | MEDIUM | LOW — HIGH jika < 7 hari, MEDIUM jika < 14 hari>,
-    "topics": <array string untuk STUDY_PLAN, kosong untuk tipe lain>,
-    "duration_minutes": <estimasi menit, null jika tidak disebutkan>
-  },
-  "reply": <pesan balasan ramah dalam bahasa Indonesia informal, konfirmasi apa yang kamu tangkap + info reminder yang akan diset>,
-  "needs_confirmation": <true jika tanggal/detail tidak jelas, false jika sudah pasti>
+    "title": <judul singkat>,
+    "deadline_date": <"YYYY-MM-DD" ATAU null jika tidak tahu. JANGAN TULIS KATA-KATA>,
+    "deadline_time": <"HH:MM" ATAU "23:59">,
+    "priority": <HIGH | MEDIUM | LOW>
+  } ATAU null jika action adalah QUERY_SCHEDULE atau NONE,
+  "reply": <balasan ramah ke user (bisa memberi tips jadwal, rangkuman, dll)>,
+  "needs_confirmation": <bool>
 }
 
-ATURAN PENTING:
-- Tanggal hari ini: ${today}
-- Jika user sebut "minggu depan" → hitung 7 hari dari hari ini
-- Jika user sebut "besok" → hitung 1 hari dari hari ini  
-- Jika ada daftar materi/topik → intent = STUDY_PLAN, isi array topics
-- Jika tidak ada tanggal sama sekali → needs_confirmation = true
-- reply harus menyebut nama jadwal dan tanggal yang kamu tangkap
-- Gunakan bahasa yang friendly dan encouraging
-- JANGAN tambah teks apapun di luar JSON`;
+ATURAN PENTING KATEGORI (INTENT):
+- "lari", "maraton", "jogging" -> RUNNING
+- "gym", "workout", "fitness" -> WORKOUT
+- "futsal", "basket", "tanding", "olahraga" -> SPORT
+- Jika user sekadar minta tips (misal "kapan hari baik melukis", "tips produktivitas"), atau tanya "jadwal minggu ini" -> intent: QUERY, action: NONE atau QUERY_SCHEDULE, schedule: null. Jawab dengan cerdas di field "reply".
+
+WAKTU & TANGGAL SAAT INI: ${today}
+- "besok" = +1 hari. "lusa" = +2 hari. "minggu depan" = +7 hari.
+- JANGAN PERNAH mengisi deadline_date dengan string seperti "minggu depan". HARUS dan WAJIB format YYYY-MM-DD.
+- Jika tanggal sama sekali tidak disebut, biarkan "deadline_date": null.
+
+JADWAL AKTIF USER SAAT INI PADA DATABASE (Bantu jawab jika QUERY):
+${activeSch || "Tidak ada jadwal aktif."}
+
+PENTING: JANGAN KEMBALIKAN MARKDOWN ATAU TEKS LAIN, HANYA JSON MURNI!`;
 }
 
 // ──────────────────────────────────────────────────────────────
@@ -256,7 +261,7 @@ export async function classifyIntent(
         body: JSON.stringify({
           model: "llama-3.3-70b-versatile",
           messages: [
-            { role: "system", content: buildSystemPrompt() },
+            { role: "system", content: buildSystemPrompt(schedules) },
             ...messages,
           ],
           temperature: 0.1,

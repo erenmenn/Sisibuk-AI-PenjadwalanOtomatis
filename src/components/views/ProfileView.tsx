@@ -34,9 +34,7 @@ export default function ProfileView() {
   ];
 
   return (
-    <div className="flex-1 w-full overflow-y-auto custom-scrollbar pb-12" style={{
-      background: "linear-gradient(160deg,#f0f4ff 0%,#f8f0ff 50%,#e8f4fd 100%)"
-    }}>
+    <div className="h-full w-full overflow-y-auto custom-scrollbar pb-12 bg-transparent">
 
       {/* ─── HERO BANNER ─── */}
       <div className="relative px-8 pt-8 pb-8 overflow-hidden">

@@ -5,7 +5,8 @@ import { StudySource } from "@/lib/types";
 import {
   BookOpen, Plus, Trash2, Play, Square, Link2, FileText, Video,
   File, Clock, Trophy, Timer, Zap, Globe,
-  ExternalLink, ChevronRight, CheckCircle, Sparkles, FolderHeart, Flame
+  ExternalLink, ChevronRight, CheckCircle, Sparkles, FolderHeart, Flame,
+  CalendarDays, LineChart
 } from "lucide-react";
 import { format, isSameDay } from "date-fns";
 import { id } from "date-fns/locale";
@@ -83,16 +84,14 @@ export default function StudyView() {
   };
 
   const TAB_ITEMS = [
-    { key: "plan",    label: "Rencana AI", emoji: "🗓️" },
-    { key: "timer",   label: "Timer",      emoji: "⏱️" },
-    { key: "sources", label: "Sumber",     emoji: "📂" },
-    { key: "history", label: "Riwayat",    emoji: "📊" },
+    { key: "plan",    label: "Rencana AI", icon: CalendarDays },
+    { key: "timer",   label: "Timer",      icon: Timer },
+    { key: "sources", label: "Sumber",     icon: FolderHeart },
+    { key: "history", label: "Riwayat",    icon: LineChart },
   ] as const;
 
   return (
-    <div className="flex flex-col h-full w-full overflow-hidden" style={{
-      background: "linear-gradient(160deg,#f0f4ff 0%,#f8f0ff 50%,#e8f4fd 100%)"
-    }}>
+    <div className="flex flex-col h-full w-full overflow-hidden bg-transparent">
 
       {/* ── HEADER ── */}
       <div className="relative px-8 pt-8 pb-0 shrink-0 overflow-hidden">
@@ -137,24 +136,26 @@ export default function StudyView() {
           </div>
         </div>
 
-        {/* Tabs */}
-        <div className="flex gap-1.5">
-          {TAB_ITEMS.map(t => (
-            <button key={t.key} onClick={() => setTab(t.key)}
-              className={`relative px-5 py-2.5 text-sm font-bold transition-all rounded-t-2xl flex items-center gap-1.5 ${
-                tab === t.key
-                  ? "bg-white/90 text-[#7c3aed] shadow-sm border-t border-x border-white/80 h-[44px]"
-                  : "text-purple-500/70 hover:text-purple-700 hover:bg-white/40 h-[40px] translate-y-1"
-              }`}>
-              <span>{t.emoji}</span> {t.label}
-              {t.key === "timer" && activeLog && (
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-pink-500 animate-pulse" />
-              )}
-            </button>
-          ))}
+        <div className="flex gap-1.5 z-10 relative px-4">
+          {TAB_ITEMS.map(t => {
+            const Icon = t.icon;
+            return (
+              <button key={t.key} onClick={() => setTab(t.key)}
+                className={`relative px-5 py-3 text-sm font-bold transition-all rounded-t-2xl flex items-center gap-2.5 ${
+                  tab === t.key
+                    ? "bg-white/60 backdrop-blur-xl text-[#7c3aed] shadow-[0_-4px_10px_rgba(255,255,255,0.3)] border-t border-x border-white/80"
+                    : "text-purple-500/70 hover:text-purple-700 hover:bg-white/40 translate-y-1"
+                }`}>
+                <Icon size={16} className={tab === t.key ? "text-purple-600" : "opacity-70"} /> {t.label}
+                {t.key === "timer" && activeLog && (
+                  <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-pink-500 animate-pulse border border-white" />
+                )}
+              </button>
+            );
+          })}
         </div>
 
-        <div className="h-px bg-gradient-to-r from-transparent via-purple-200 to-transparent" />
+        <div className="h-px bg-gradient-to-r from-white/40 via-white/10 to-transparent" />
       </div>
 
       {/* ── CONTENT ── */}
@@ -281,15 +282,14 @@ export default function StudyView() {
 
         {/* ══ TAB: Timer ══ */}
         {tab === "timer" && (
-          <div className="flex flex-col gap-5 max-w-md mx-auto items-center pt-4">
+          <div className="flex flex-col w-full max-w-4xl mx-auto pt-4">
             {activeLog ? (
               /* Active session card */
-              <div className="w-full rounded-3xl overflow-hidden shadow-[0_20px_60px_rgba(139,92,246,0.2)]">
+              <div className="w-full rounded-[2.5rem] overflow-hidden shadow-[0_20px_60px_rgba(139,92,246,0.2)] bg-white/60 backdrop-blur-2xl border border-white/60">
                 {/* Top gradient bar */}
                 <div className="h-2 w-full" style={{ background: "linear-gradient(90deg,#818cf8,#a855f7,#ec4899)" }} />
 
-                <div className="bg-white/90 p-10 flex flex-col items-center text-center">
-                  {/* Pulsing ring + icon */}
+                <div className="p-10 flex flex-col items-center justify-center text-center">
                   <div className="relative mb-6">
                     <div className="w-24 h-24 rounded-3xl flex items-center justify-center shadow-xl"
                       style={{ background: "linear-gradient(135deg,#818cf8,#a855f7,#ec4899)" }}>
@@ -298,46 +298,50 @@ export default function StudyView() {
                     <span className="absolute -top-1 -right-1 w-5 h-5 bg-pink-500 rounded-full border-2 border-white animate-pulse" />
                   </div>
 
-                  <span className="text-[10px] font-black uppercase tracking-widest text-purple-400 bg-purple-50 px-3 py-1 rounded-full mb-3">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-purple-600 bg-white/80 px-4 py-1.5 rounded-full mb-3 shadow-sm border border-purple-100">
                     Sedang Fokus Belajar
                   </span>
-                  <h2 className="text-xl font-black text-[#1e1b4b] mb-1">{activeLog.subject.replace("Belajar: ", "")}</h2>
+                  <h2 className="text-2xl font-black text-[#1e1b4b] mb-2">{activeLog.subject.replace("Belajar: ", "")}</h2>
                   {activeLog.topics.length > 0 && (
-                    <p className="text-sm text-purple-400 mb-6">{activeLog.topics.join("  •  ")}</p>
+                    <p className="text-sm text-purple-500 mb-8 font-bold">{activeLog.topics.join("  •  ")}</p>
                   )}
 
-                  <div className="w-full bg-indigo-50 border border-indigo-100 rounded-2xl py-5 mb-8">
-                    <p className="text-indigo-400 text-[10px] font-black uppercase tracking-widest mb-1">Waktu Berjalan</p>
+                  <div className="w-full max-w-sm bg-white/50 border border-white rounded-3xl py-6 mb-8 shadow-inner">
+                    <p className="text-indigo-400 text-[10px] font-black uppercase tracking-widest mb-2">Waktu Berjalan</p>
                     <LiveTimer startedAt={activeLog.startedAt} />
                   </div>
 
                   <button onClick={handleStopAndComplete}
-                    className="w-full py-4 rounded-2xl font-black text-white shadow-lg hover:-translate-y-0.5 transition-transform flex items-center justify-center gap-2"
+                    className="w-full max-w-sm py-4 rounded-full font-black text-white shadow-[0_10px_25px_rgba(244,63,94,0.4)] hover:-translate-y-0.5 transition-transform flex items-center justify-center gap-2 border border-white/40"
                     style={{ background: "linear-gradient(135deg,#f43f5e,#f97316)" }}>
                     <Square size={16} fill="currentColor" /> SELESAI & SIMPAN XP
                   </button>
                 </div>
               </div>
             ) : (
-              /* Start form */
-              <div className="w-full bg-white/90 border border-white rounded-3xl p-8 shadow-sm">
-                <div className="h-1 -mx-8 -mt-8 mb-8 rounded-t-3xl" style={{ background: "linear-gradient(90deg,#38bdf8,#818cf8,#a855f7)" }} />
-
-                <div className="flex flex-col items-center mb-6">
-                  <div className="w-14 h-14 rounded-2xl mb-3 flex items-center justify-center"
+              /* Start form (Horizontal Glassmorphism Layout) */
+              <div className="w-full flex flex-col md:flex-row bg-white/40 backdrop-blur-2xl border border-white/60 rounded-[2.5rem] shadow-lg overflow-hidden">
+                
+                {/* Left Side: Info & Hero */}
+                <div className="flex-1 p-8 md:p-12 flex flex-col justify-center items-start text-left bg-gradient-to-br from-white/60 to-transparent border-r border-white/30">
+                  <div className="w-16 h-16 rounded-2xl mb-6 flex items-center justify-center shadow-lg"
                     style={{ background: "linear-gradient(135deg,#38bdf8,#818cf8)" }}>
-                    <Clock size={28} className="text-white" />
+                    <Timer size={32} className="text-white" />
                   </div>
-                  <h2 className="text-xl font-black text-[#1e1b4b]">Mulai Sesi Fokus</h2>
-                  <div className="mt-2 px-4 py-1.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700 border border-emerald-200">
-                    ⚡ +2 XP per menit belajar!
+                  <h2 className="text-3xl font-black text-[#1e1b4b] font-syne mb-4">Mulai Sesi Fokus</h2>
+                  <p className="text-sm text-purple-700/80 max-w-xs mb-8 leading-relaxed font-medium">
+                    Siapkan dirimu, singkirkan gangguan, dan mulai fokus pada belajarmu. 
+                  </p>
+                  <div className="px-5 py-3 rounded-2xl text-xs font-black bg-emerald-100/80 text-emerald-700 border border-emerald-200 shadow-sm flex items-center gap-2">
+                    <Sparkles size={16} className="text-emerald-500" /> +2 XP per menit fokus!
                   </div>
                 </div>
 
-                <div className="flex flex-col gap-4">
+                {/* Right Side: Inputs */}
+                <div className="flex-[1.2] flex flex-col justify-center p-8 md:p-12 gap-5">
                   {studySchedules.filter(s => !s.isCompleted).length > 0 && (
                     <div>
-                      <label className="text-[10px] font-black text-purple-700 uppercase tracking-widest mb-1.5 block">Pilih Rencana AI (Opsional)</label>
+                      <label className="text-[10px] font-black text-purple-700 uppercase tracking-widest mb-2 block ml-1">Pilih Rencana AI (Opsional)</label>
                       <select value={selectedScheduleId || ""} onChange={e => {
                         const val = e.target.value;
                         setSelectedScheduleId(val || null);
@@ -345,7 +349,7 @@ export default function StudyView() {
                           const sch = schedules.find(s => s.id === val);
                           if (sch) setTimerSubject(sch.title);
                         }
-                      }} className="w-full bg-purple-50 border border-purple-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400">
+                      }} className="w-full bg-white/60 border border-white rounded-2xl px-5 py-4 text-sm font-semibold text-purple-900 focus:outline-none focus:ring-2 focus:ring-purple-400 shadow-sm transition-all focus:bg-white/90">
                         <option value="">-- Bebas (Independent Study) --</option>
                         {studySchedules.filter(s => !s.isCompleted).map(sch => (
                           <option key={sch.id} value={sch.id}>{sch.title}</option>
@@ -353,25 +357,27 @@ export default function StudyView() {
                       </select>
                     </div>
                   )}
+                  
                   <div>
-                    <label className="text-[10px] font-black text-purple-700 uppercase tracking-widest mb-1.5 block">Materi / Topik Utama *</label>
+                    <label className="text-[10px] font-black text-purple-700 uppercase tracking-widest mb-2 block ml-1">Materi / Topik Utama *</label>
                     <input value={timerSubject} onChange={e => setTimerSubject(e.target.value)}
                       placeholder="Contoh: Kalkulus Dasar"
-                      className="w-full bg-purple-50 border border-purple-200 rounded-xl px-4 py-3 text-sm font-bold text-[#1e1b4b] focus:outline-none focus:ring-2 focus:ring-purple-400" />
+                      className="w-full bg-white/60 border border-white rounded-2xl px-5 py-4 text-sm font-bold text-[#1e1b4b] focus:outline-none focus:ring-2 focus:ring-purple-400 shadow-sm transition-all focus:bg-white/90 placeholder-purple-300" />
                   </div>
+                  
                   <div>
-                    <label className="text-[10px] font-black text-purple-700 uppercase tracking-widest mb-1.5 block">Target Sub-topik</label>
+                    <label className="text-[10px] font-black text-purple-700 uppercase tracking-widest mb-2 block ml-1">Target Sub-topik (Opsional)</label>
                     <input value={timerTopics} onChange={e => setTimerTopics(e.target.value)}
-                      placeholder="Turunan, Integral, dll"
-                      className="w-full bg-purple-50 border border-purple-200 rounded-xl px-4 py-3 text-sm text-[#1e1b4b] focus:outline-none focus:ring-2 focus:ring-purple-400" />
+                      placeholder="Contoh: Turunan, Integral, Latihan Soal..."
+                      className="w-full bg-white/60 border border-white rounded-2xl px-5 py-4 text-sm font-semibold text-[#1e1b4b] focus:outline-none focus:ring-2 focus:ring-purple-400 shadow-sm transition-all focus:bg-white/90 placeholder-purple-300" />
                   </div>
-                </div>
 
-                <button onClick={handleStartTimer} disabled={!timerSubject.trim()}
-                  className="mt-6 w-full py-4 rounded-2xl font-black text-white shadow-md hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:transform-none flex items-center justify-center gap-2"
-                  style={{ background: "linear-gradient(135deg,#818cf8,#a855f7,#ec4899)" }}>
-                  ▶ START TIMER
-                </button>
+                  <button onClick={handleStartTimer} disabled={!timerSubject.trim()}
+                    className="mt-4 w-full py-4 rounded-2xl font-black text-white shadow-lg hover:-translate-y-0.5 transition-all outline-none border border-white/20 disabled:opacity-50 disabled:transform-none flex items-center justify-center gap-2"
+                    style={{ background: "linear-gradient(135deg,#818cf8,#a855f7,#ec4899)" }}>
+                    <Play size={16} fill="currentColor" /> MULAI TIMER SEKARANG
+                  </button>
+                </div>
               </div>
             )}
           </div>
