@@ -108,14 +108,17 @@ const INTENT_STYLE: Record<string, { shape: string; label: string }> = {
   QUERY:             { shape: "rounded-lg border border-gray-300 bg-gray-100 text-gray-500", label: "❓ Query" },
 };
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const CTip = ({ active, payload, label }: any) =>
   active && payload?.length ? (
     <div className="bg-white border border-gray-200 rounded-xl p-3 shadow-xl text-xs font-medium">
       <p className="font-bold mb-1">{label}</p>
+      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
       {payload.map((e: any, i: number) => <p key={i} style={{ color: e.color }}>● {e.name}: {e.value}</p>)}
     </div>
   ) : null;
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const PTip = ({ active, payload }: any) =>
   active && payload?.length ? (
     <div className="bg-white border border-gray-200 rounded-xl p-3 shadow-xl text-xs font-medium">
@@ -396,6 +399,7 @@ function ClassTable() {
 /*  Schedule Card — clearly shows intent type                   */
 /* ──────────────────────────────────────────────────────────── */
 function ScheduleCard({ sch, onComplete, onDelete }: {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   sch: any;
   onComplete: (id: string) => void;
   onDelete: (id: string) => void;

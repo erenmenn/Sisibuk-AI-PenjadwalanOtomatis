@@ -90,14 +90,17 @@ export default function LoginView({ onLoginSuccess }: { onLoginSuccess: () => vo
         });
         if (error) throw error;
         setErrorMsg(""); 
-        alert(`✅ Pendaftaran berhasil!\n\nCek email ${email} untuk konfirmasi, lalu silakan Login.`);
-        setIsLogin(true);
-      }
-    } catch (error: any) {
-      setErrorMsg(error.message || "Terjadi kesalahan.");
-    } finally {
-      setLoading(false);
+      setIsLogin(true);
     }
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      setErrorMsg(error.message || "Terjadi kesalahan.");
+    } else {
+      setErrorMsg("Terjadi kesalahan.");
+    }
+  } finally {
+    setLoading(false);
+  }
   };
 
   return (

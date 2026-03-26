@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
   if (code) {
     await supabase.auth.exchangeCodeForSession(code);
   } else if (token_hash && type) {
-    await supabase.auth.verifyOtp({ token_hash, type: type as any });
+    await supabase.auth.verifyOtp({ token_hash, type: type as "signup" | "recovery" | "invite" | "magiclink" });
   }
 
   // Redirect back to homepage after successful confirmation

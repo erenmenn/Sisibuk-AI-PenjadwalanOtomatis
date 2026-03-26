@@ -40,6 +40,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
       supabase.auth.getUser().then(({ data: { user } }) => {
         if (user?.email) setUserEmail(user.email);
       });
+      // eslint-disable-next-line
       setDisplayName(user.name);
     }
   }, [isOpen, user.name]);
@@ -85,7 +86,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
   if (!isOpen) return null;
 
-  const tabs: { id: Tab; icon: any; label: string }[] = [
+  const tabs: { id: Tab; icon: React.ElementType; label: string }[] = [
     { id: "profile", icon: User, label: "Profil" },
     { id: "security", icon: Shield, label: "Keamanan" },
     { id: "notifications", icon: Bell, label: "Notifikasi" },

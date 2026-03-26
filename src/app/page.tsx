@@ -13,10 +13,38 @@ import LoginView from "@/components/views/LoginView";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 
+import { Session } from "@supabase/supabase-js";
+
 export default function Home() {
   const { currentView } = useAppStore();
-  const [session, setSession] = useState<any>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [loadingSession, setLoadingSession] = useState(true);
+  const fetchUserData = async (userId: string) => {
+    try {
+      const { data } = await supabase
+        .from("user_data")
+        .select("state")
+        .eq("user_id", userId)
+        .single();
+
+      if (data?.state) {
+        // Returning user: restore their cloud state
+        useAppStore.setState({
+          ...data.state,
+          currentView: data.state.currentView === "onboarding" ? "dashboard" : data.state.currentView,
+        });
+      } else {
+        // New user: set name from Supabase metadata, skip onboarding
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user?.user_metadata?.name) {
+          useAppStore.getState().updateUserName(user.user_metadata.name);
+        }
+        useAppStore.getState().completeOnboarding();
+      }
+    } catch (e) {
+      console.log("Error fetching user data:", e);
+    }
+  };
 
   useEffect(() => {
     // Clear old localStorage data that might interfere
@@ -71,34 +99,6 @@ export default function Home() {
 
     return () => subscription.unsubscribe();
   }, []);
-
-  const fetchUserData = async (userId: string) => {
-    try {
-      const { data } = await supabase
-        .from("user_data")
-        .select("state")
-        .eq("user_id", userId)
-        .single();
-
-      if (data?.state) {
-        // Returning user: restore their cloud state
-        useAppStore.setState({
-          ...data.state,
-          // Always start at dashboard if they had cloud data
-          currentView: data.state.currentView === "onboarding" ? "dashboard" : data.state.currentView,
-        });
-      } else {
-        // New user: set name from Supabase metadata, skip onboarding
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user?.user_metadata?.name) {
-          useAppStore.getState().updateUserName(user.user_metadata.name);
-        }
-        useAppStore.getState().completeOnboarding();
-      }
-    } catch (e) {
-      console.log("Error fetching user data:", e);
-    }
-  };
 
   // Sync state changes to Supabase cloud automatically (debounced 2s)
   useEffect(() => {
