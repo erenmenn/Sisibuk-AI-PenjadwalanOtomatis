@@ -46,9 +46,7 @@ export default function DashboardView() {
   const totalActive = schedules.filter(s => !s.isCompleted).length;
 
   return (
-    <div className="flex-1 h-full overflow-y-auto custom-scrollbar" style={{
-      background: "linear-gradient(165deg,#f6f8ff 0%,#f0edff 45%,#eef6ff 100%)"
-    }}>
+    <div className="flex-1 h-full overflow-y-auto custom-scrollbar bg-transparent">
 
       {/* ════════════════════ HERO HEADER ════════════════════ */}
       <div className="relative px-8 pt-8 pb-0 overflow-hidden">

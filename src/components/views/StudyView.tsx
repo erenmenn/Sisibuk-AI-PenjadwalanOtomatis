@@ -91,7 +91,9 @@ export default function StudyView() {
   ] as const;
 
   return (
-    <div className="flex flex-col h-full w-full overflow-hidden bg-transparent">
+    <div className="flex flex-col h-full w-full overflow-hidden" style={{
+      background: "linear-gradient(160deg, rgba(255,255,255,0.4) 0%, rgba(245,235,255,0.3) 50%, rgba(230,240,255,0.4) 100%)"
+    }}>
 
       {/* ── HEADER ── */}
       <div className="relative px-8 pt-8 pb-0 shrink-0 overflow-hidden">
