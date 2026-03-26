@@ -155,7 +155,7 @@ export default function StudyView() {
                 <p className="text-sm font-medium text-purple-700 mb-8 max-w-sm mx-auto">
                   Chat dengan MILKUN.AI dan bilang:<br />
                   <span className="inline-block mt-2 font-bold px-4 py-2 bg-purple-100/80 rounded-xl text-purple-600">
-                    "aku mau belajar React dan AI!"
+                    &quot;aku mau belajar React dan AI!&quot;
                   </span>
                 </p>
                 <button onClick={() => useAppStore.getState().setView("chat")}

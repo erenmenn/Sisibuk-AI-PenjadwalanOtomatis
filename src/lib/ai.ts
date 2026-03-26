@@ -130,7 +130,7 @@ function ruleBased(
   const actionIdx = words.findIndex(w => actionWords.some(a => w.toLowerCase().includes(a)));
   if (actionIdx !== -1 && actionIdx < words.length - 1) {
      // Take up to 5 words after the action word
-     let extractedTitle = words.slice(actionIdx, actionIdx + 5).join(" ").replace(/(besok|nanti|tanggal|\d+|minggu|depan)/g, "").trim();
+     const extractedTitle = words.slice(actionIdx, actionIdx + 5).join(" ").replace(/(besok|nanti|tanggal|\d+|minggu|depan)/g, "").trim();
      if (extractedTitle) title = extractedTitle;
   }
 

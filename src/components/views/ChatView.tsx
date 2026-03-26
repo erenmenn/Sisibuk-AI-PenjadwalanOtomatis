@@ -24,22 +24,31 @@ function StudyPlanCard({ plan, onCommit }: { plan: PendingStudyPlan; onCommit: (
   const grads = ["grad-violet-pink", "grad-orange-yellow", "grad-blue-cyan", "grad-green-teal", "grad-red-rose"];
   if (plan.step !== "done" || !plan.assignedDates) return null;
   return (
-    <div className="bg-white border border-[var(--color-border)] rounded-2xl overflow-hidden shadow-lg my-3 max-w-md">
-      <div className="grad-violet-pink px-5 py-3 text-white flex items-center gap-2 text-sm font-bold">
+    <div className="bg-white/80 backdrop-blur-md border border-white/60 rounded-[1.5rem] overflow-hidden shadow-lg my-3 max-w-md">
+      <div className="bg-gradient-to-r from-[#d946ef] to-[#ec4899] px-5 py-3 text-white flex items-center gap-2 text-sm font-bold shadow-md">
         <Sparkles size={16} /> Rencana Belajar Tersusun! ✨
       </div>
       <div className="p-4 flex flex-col gap-2.5">
-        {plan.assignedDates.map((item, i) => (
-          <div key={i} className={`${grads[i % grads.length]} text-white rounded-xl px-4 py-3 flex items-center justify-between text-sm font-bold shadow-sm`}>
-            <span className="flex items-center gap-2"><Hash size={13} /> {item.topic}</span>
+        {plan.assignedDates.map((item, i) => {
+          const tailwindGrads = [
+            "bg-gradient-to-r from-[#c084fc] to-[#a855f7]",
+            "bg-gradient-to-r from-[#fbbf24] to-[#f59e0b]",
+            "bg-gradient-to-r from-[#38bdf8] to-[#0ea5e9]",
+            "bg-gradient-to-r from-[#34d399] to-[#10b981]",
+            "bg-gradient-to-r from-[#fb7185] to-[#f43f5e]"
+          ];
+          return (
+          <div key={i} className={`${tailwindGrads[i % tailwindGrads.length]} text-white rounded-[1.2rem] px-4 py-3 flex items-center justify-between text-sm font-bold shadow-sm hover:scale-[1.01] transition-transform`}>
+            <span className="flex items-center gap-2"><Hash size={13} className="opacity-80"/> {item.topic}</span>
             <span className="bg-white/25 px-3 py-1 rounded-lg font-mono text-xs">
               {format(new Date(item.date + "T00:00"), "EEE, d MMM", { locale: id })} · 09:00
             </span>
           </div>
-        ))}
+          );
+        })}
         <button onClick={onCommit}
-          className="mt-1 w-full py-3 grad-violet-pink glow-violet text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:scale-[1.02] transition-all">
-          <CheckCircle size={16} /> Simpan ke Study Room & Jadwal
+          className="mt-2 w-full py-3.5 bg-gradient-to-r from-[#8b5cf6] to-[#d946ef] text-white rounded-[1.2rem] font-bold text-sm flex items-center justify-center gap-2 hover:scale-[1.02] shadow-[0_4px_12px_rgba(139,92,246,0.3)] transition-transform">
+          <CheckCircle size={18} /> Simpan ke Study Room
         </button>
       </div>
     </div>
@@ -51,7 +60,7 @@ function QuickReplies({ options, onSelect }: { options: { label: string; value: 
     <div className="flex flex-wrap gap-2 mt-2 ml-12">
       {options.map(opt => (
         <button key={opt.value} onClick={() => onSelect(opt.value)}
-          className="px-4 py-2 bg-white border-2 border-[#7C3AED] text-[#7C3AED] rounded-full text-sm font-bold hover:bg-[#7C3AED] hover:text-white transition-all active:scale-95 shadow-sm">
+          className="px-5 py-2.5 bg-white/70 backdrop-blur-sm border border-purple-200 text-purple-700 rounded-full text-sm font-bold hover:bg-gradient-to-r hover:from-[#c084fc] hover:to-[#ec4899] hover:text-white hover:border-transparent transition-all hover:-translate-y-0.5 shadow-sm">
           {opt.label}
         </button>
       ))}
@@ -67,10 +76,10 @@ function WelcomeBanner({ name, onDismiss }: { name: string; onDismiss: () => voi
   const day = format(new Date(), "EEEE, d MMMM yyyy", { locale: id });
 
   return (
-    <div className="flex flex-col items-center justify-center flex-1 text-center px-8 py-12 animate-in fade-in duration-700">
+    <div className="flex flex-col items-center justify-center flex-1 text-center px-8 py-12">
       {/* Big animated icon */}
-      <div className="w-20 h-20 grad-violet-pink glow-violet rounded-3xl flex items-center justify-center mb-6 shadow-[0_16px_40px_rgba(124,58,237,0.35)] animate-in zoom-in duration-500">
-        <Sparkles size={36} className="text-white" />
+      <div className="w-20 h-20 bg-gradient-to-br from-[#d946ef] to-[#ec4899] rounded-[1.5rem] flex items-center justify-center mb-6 shadow-[0_12px_24px_rgba(236,72,153,0.3)] hover:scale-110 transition-transform cursor-default">
+        <Sparkles size={36} className="text-white drop-shadow-md" />
       </div>
 
       <p className="text-sm font-bold text-[var(--color-text-secondary)] uppercase tracking-widest mb-2">{day}</p>
@@ -93,10 +102,10 @@ function WelcomeBanner({ name, onDismiss }: { name: string; onDismiss: () => voi
           { text: "📚  Buat rencana belajar AI", prompt: "aku mau belajar RAG, MCP, dan AI Agent" },
           { text: "💪  Catat sesi olahraga", prompt: "besok pagi aku mau lari jam 6 pagi" },
         ].map(s => (
-          <button key={s.prompt} onClick={onDismiss}
-            className="group flex items-center justify-between px-4 py-3 bg-white border border-[var(--color-border)] rounded-xl hover:border-[#7C3AED] hover:bg-[#F3E8FF] transition-all text-sm font-medium text-[var(--color-text-primary)] shadow-sm">
-            <span>{s.text}</span>
-            <ArrowRight size={14} className="text-[var(--color-text-secondary)] group-hover:text-[#7C3AED] transition-colors" />
+          <button key={s.prompt} onClick={() => { useAppStore.getState().addMessage({ role: "user", content: s.prompt }); onDismiss(); setTimeout(() => useAppStore.getState().addMessage({ role: "assistant", content: "Baik, segera aku bantu jadwalkan! Tunggu sebentar ya..." }), 500); }}
+            className="group flex items-center justify-between px-5 py-4 bg-white/60 backdrop-blur-sm border border-white rounded-[1.2rem] hover:bg-white/90 hover:shadow-md hover:-translate-y-0.5 transition-all text-sm font-bold text-purple-900 shadow-sm">
+            <span className="flex items-center gap-3"><span className="text-lg drop-shadow-sm">{s.text.split('  ')[0]}</span> {s.text.split('  ')[1]}</span>
+            <ArrowRight size={16} className="text-purple-400 group-hover:text-pink-500 transition-colors" />
           </button>
         ))}
       </div>
@@ -177,7 +186,7 @@ export default function ChatView() {
       } else {
         const newSch = addSchedule({ title: result.schedule.title, type: result.intent, createdVia: "chat", deadlineAt: result.schedule.deadline_date ? `${result.schedule.deadline_date}T${result.schedule.deadline_time || "23:59"}` : null });
         addXP(10, "Tambah jadwal");
-        const intent = INTENT_LABELS[result.intent];
+        const intent = INTENT_LABELS[result.intent] || INTENT_LABELS.UNKNOWN;
         const dateStr = result.schedule.deadline_date ? format(new Date(result.schedule.deadline_date), "EEEE, d MMMM yyyy", { locale: id }) : "Belum ada tenggat";
         addMessage({ role: "assistant", content: `${intent.emoji} **${result.schedule.title}** sudah dicatat!\n\n📅 ${dateStr}\n🏷️ *${intent.label}*\n\n**+10 XP** 🎉`, relatedScheduleId: newSch.id, xpEarned: 10 });
       }
@@ -213,16 +222,16 @@ export default function ChatView() {
               <div key={msg.id}>
                 <div className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"} animate-in fade-in slide-in-from-bottom-2`}>
                   {msg.role === "assistant" && (
-                    <div className="w-10 h-10 rounded-2xl grad-violet-pink flex items-center justify-center text-white mr-3 shrink-0 shadow-[0_8px_16px_rgba(124,58,237,0.3)] border border-white/50">
+                    <div className="w-10 h-10 rounded-[1rem] bg-gradient-to-br from-[#c084fc] to-[#ec4899] flex items-center justify-center text-white mr-3 shrink-0 shadow-md border border-white/50">
                       <Sparkles size={18} />
                     </div>
                   )}
-                  <div className={`max-w-[78%] rounded-3xl px-5 py-4 shadow-sm ${
+                  <div className={`max-w-[80%] rounded-[1.5rem] px-5 py-4 shadow-sm ${
                     msg.role === "user"
-                      ? "bg-gradient-to-br from-[#7C3AED] to-[#EC4899] text-white rounded-tr-sm shadow-[0_8px_24px_rgba(124,58,237,0.4)] border border-white/20"
-                      : "glass-surface rounded-tl-sm text-purple-950 border border-white/60 shadow-[0_8px_32px_rgba(31,38,135,0.05)]"
+                      ? "bg-gradient-to-r from-[#d946ef] to-[#ec4899] text-white rounded-tr-md shadow-[0_4px_15px_rgba(236,72,153,0.3)] border border-white/20"
+                      : "bg-white/80 backdrop-blur-md rounded-tl-md text-[#1e1b4b] border border-white/60 shadow-sm"
                   }`}>
-                    <div className={`prose prose-sm max-w-none leading-relaxed prose-p:my-0.5 font-medium ${msg.role === "user" ? "prose-invert" : ""}`}>
+                    <div className={`prose prose-sm max-w-none leading-relaxed prose-p:my-0.5 font-bold ${msg.role === "user" ? "prose-invert" : "prose-p:text-[#1e1b4b] prose-strong:text-purple-700"}`}>
                       <ReactMarkdown>{msg.content}</ReactMarkdown>
                     </div>
                     {msg.xpEarned && (
@@ -243,13 +252,13 @@ export default function ChatView() {
 
             {isAiTyping && (
               <div className="flex items-end animate-in fade-in">
-                <div className="w-10 h-10 rounded-2xl grad-violet-pink flex items-center justify-center text-white mr-3 shrink-0 shadow-[0_8px_16px_rgba(124,58,237,0.3)] border border-white/50">
+                <div className="w-10 h-10 rounded-[1rem] bg-gradient-to-br from-[#c084fc] to-[#ec4899] flex items-center justify-center text-white mr-3 shrink-0 shadow-md border border-white/50">
                   <Sparkles size={18} />
                 </div>
-                <div className="glass-surface rounded-3xl rounded-tl-sm p-5 flex gap-1.5 shadow-sm border border-white/60">
-                  <div className="w-2 h-2 bg-[#7C3AED] rounded-full animate-bounce [animation-delay:-0.3s]" />
-                  <div className="w-2 h-2 bg-[#7C3AED] rounded-full animate-bounce [animation-delay:-0.15s]" />
-                  <div className="w-2 h-2 bg-[#7C3AED] rounded-full animate-bounce" />
+                <div className="bg-white/80 backdrop-blur-md rounded-[1.5rem] rounded-tl-md px-5 py-4 flex gap-1.5 shadow-sm border border-white/60">
+                  <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce [animation-delay:-0.3s]" />
+                  <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce [animation-delay:-0.15s]" />
+                  <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" />
                 </div>
               </div>
             )}
@@ -259,13 +268,13 @@ export default function ChatView() {
       </div>
 
       {/* Input */}
-      <div className="bg-white/20 backdrop-blur-xl px-6 py-5 border-t border-white/40 shrink-0 shadow-[0_-10px_40px_rgba(31,38,135,0.05)] rounded-br-[3rem] -mb-1 -mr-1">
-        <div className="flex items-center gap-3 bg-white/40 shadow-inner px-2 py-1.5 rounded-full border border-white/60 focus-within:border-white focus-within:ring-4 focus-within:ring-white/30 transition-all">
+      <div className="bg-white/40 backdrop-blur-xl px-6 py-5 border-t border-white/40 shrink-0 rounded-br-[2.5rem] -mb-1 -mr-1">
+        <div className="flex items-center gap-3 bg-white/70 shadow-inner px-2 py-1.5 rounded-[1.5rem] border border-white focus-within:ring-4 focus-within:ring-white/50 transition-all">
           <input value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === "Enter" && !e.shiftKey && handleSend()}
-            placeholder={showWelcome ? "Ketik pesan atau pilih saran di atas..." : "Ketik tugas atau tanya ke MILKUN.AI..."}
-            className="flex-1 bg-transparent px-5 py-3 text-sm text-purple-950 placeholder:text-purple-800 focus:outline-none font-bold placeholder:font-bold" />
+            placeholder={showWelcome ? "Ketik pesan atau pilih saran di atas..." : "Ketik tugas atau pesan untuk AI..."}
+            className="flex-1 bg-transparent px-5 py-3 text-sm text-[#1e1b4b] placeholder:text-purple-400 focus:outline-none font-bold placeholder:font-bold" />
           <button onClick={handleSend} disabled={!input.trim() || isAiTyping}
-            className="w-12 h-12 rounded-full grad-violet-pink shadow-[0_4px_15px_rgba(124,58,237,0.5)] text-white flex items-center justify-center shrink-0 disabled:opacity-40 disabled:shadow-none transition-all hover:scale-110 active:scale-95 border border-white/40">
+            className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-[#d946ef] to-[#ec4899] shadow-md text-white flex items-center justify-center shrink-0 disabled:opacity-40 disabled:shadow-none transition-transform hover:scale-105 active:scale-95 border border-white/40">
             <Send size={20} className="ml-1" />
           </button>
         </div>

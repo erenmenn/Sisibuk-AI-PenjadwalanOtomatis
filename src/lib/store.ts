@@ -154,7 +154,7 @@ export const useAppStore = create<AppStore>()((set, get) => ({
           .toISOString()
           .split("T")[0];
 
-        let newStreak = user.streakLastDate === yesterday
+        const newStreak = user.streakLastDate === yesterday
           ? user.streakDays + 1
           : 1;
 

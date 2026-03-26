@@ -29,8 +29,8 @@ export default function CalendarView() {
         id: s.id,
         title: s.title,
         type: s.type,
-        color: INTENT_LABELS[s.type].color,
-        emoji: INTENT_LABELS[s.type].emoji,
+        color: (INTENT_LABELS[s.type] || INTENT_LABELS.UNKNOWN).color,
+        emoji: (INTENT_LABELS[s.type] || INTENT_LABELS.UNKNOWN).emoji,
         time: s.deadlineAt ? format(new Date(s.deadlineAt), "HH:mm") : null,
         isCompleted: s.isCompleted,
       }));

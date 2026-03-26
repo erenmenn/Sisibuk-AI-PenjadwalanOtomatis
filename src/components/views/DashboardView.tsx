@@ -123,7 +123,7 @@ export default function DashboardView() {
                 <p className="font-bold text-sm">Wah, aman! Tidak ada deadline hari ini.</p>
               ) : (
                 todayDeadlines.map(sch => {
-                  const intent = INTENT_LABELS[sch.type];
+                  const intent = INTENT_LABELS[sch.type] || INTENT_LABELS.UNKNOWN;
                   return (
                     <div key={sch.id} className="flex justify-between items-center">
                       <div className="flex gap-4 items-center">
@@ -157,7 +157,7 @@ export default function DashboardView() {
                 </div>
               ) : (
                 upcomingDeadlines.map((sch, i) => {
-                  const intent = INTENT_LABELS[sch.type];
+                  const intent = INTENT_LABELS[sch.type] || INTENT_LABELS.UNKNOWN;
                   const days = sch.deadlineAt ? differenceInDays(new Date(sch.deadlineAt), today) : null;
                   return (
                     <div 
