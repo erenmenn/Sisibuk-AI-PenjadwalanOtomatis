@@ -3,274 +3,311 @@ import { useAppStore } from "@/lib/store";
 import { INTENT_LABELS } from "@/lib/types";
 import { format, isToday, differenceInDays } from "date-fns";
 import { id } from "date-fns/locale";
-import { 
-  MessageSquare, CalendarCheck, ArrowRight, Flame, Zap, Trophy, Goal,
-  ClipboardList, PenTool, MonitorPlay, Dumbbell, Star, CalendarDays, Activity, BookOpen
+import {
+  MessageSquare, CalendarCheck, ArrowRight, Flame, BookOpen,
+  ClipboardList, PenTool, MonitorPlay, Dumbbell, Star, CalendarDays,
+  Activity, Trophy, Zap, CheckCircle2, Clock
 } from "lucide-react";
 
-const getElegantIcon = (type: string) => {
-  const props = { size: 22, strokeWidth: 2.5, className: "text-white drop-shadow-sm" };
-  if (type.includes("DEADLINE")) return <ClipboardList {...props} />;
-  if (type.includes("EXAM")) return <PenTool {...props} />;
-  if (type.includes("STUDY") || type === "CLASS") return <BookOpen {...props} />;
-  if (type === "WEBINAR" || type === "MEETING") return <MonitorPlay {...props} />;
-  if (type === "COMPETITION") return <Trophy {...props} />;
-  if (type === "WORKOUT" || type === "SPORT") return <Dumbbell {...props} />;
-  if (type === "RUNNING") return <Activity {...props} />;
-  if (type === "PERSONAL") return <Star {...props} />;
-  return <CalendarDays {...props} />;
+const getIcon = (type: string) => {
+  const p = { size: 18, strokeWidth: 2.5, className: "text-white" };
+  if (type.includes("DEADLINE")) return <ClipboardList {...p} />;
+  if (type.includes("EXAM"))     return <PenTool {...p} />;
+  if (type.includes("STUDY") || type === "CLASS") return <BookOpen {...p} />;
+  if (type === "WEBINAR" || type === "MEETING")   return <MonitorPlay {...p} />;
+  if (type === "COMPETITION") return <Trophy {...p} />;
+  if (type === "WORKOUT" || type === "SPORT")     return <Dumbbell {...p} />;
+  if (type === "RUNNING")  return <Activity {...p} />;
+  if (type === "PERSONAL") return <Star {...p} />;
+  return <CalendarDays {...p} />;
+};
+
+const dayBadge = (days: number | null) => {
+  if (days === null) return { txt: "—", cls: "bg-slate-100 text-slate-400" };
+  if (days === 0)    return { txt: "Hari Ini!", cls: "bg-[#f43f5e] text-white" };
+  if (days <= 2)     return { txt: `${days}h lagi`, cls: "bg-[#f97316] text-white" };
+  if (days <= 7)     return { txt: `${days}h lagi`, cls: "bg-orange-100 text-orange-600" };
+  return               { txt: `${days}h lagi`, cls: "bg-purple-100 text-purple-600" };
 };
 
 export default function DashboardView() {
   const { schedules, classSchedules, user, setView } = useAppStore();
 
-  const today = new Date();
-  const dayOfWeek = today.getDay() === 0 ? 7 : today.getDay();
-  const todayClasses = classSchedules.filter(c => c.dayOfWeek === dayOfWeek && c.isActive);
-  const todayDeadlines = schedules.filter(s => !s.isCompleted && s.deadlineAt && isToday(new Date(s.deadlineAt)));
-  const upcomingDeadlines = schedules
+  const today       = new Date();
+  const dow         = today.getDay() === 0 ? 7 : today.getDay();
+  const todayClass  = classSchedules.filter(c => c.dayOfWeek === dow && c.isActive);
+  const todayDue    = schedules.filter(s => !s.isCompleted && s.deadlineAt && isToday(new Date(s.deadlineAt)));
+  const upcoming    = schedules
     .filter(s => !s.isCompleted && s.deadlineAt)
     .sort((a, b) => new Date(a.deadlineAt!).getTime() - new Date(b.deadlineAt!).getTime())
-    .slice(0, 4);
+    .slice(0, 5);
 
-  const totalDone = schedules.filter(s => s.isCompleted).length;
+  const totalDone   = schedules.filter(s =>  s.isCompleted).length;
   const totalActive = schedules.filter(s => !s.isCompleted).length;
 
   return (
-    <div className="flex-1 h-full overflow-y-auto px-8 py-8 relative z-10 custom-scrollbar">
-      
-      {/* ── Top Header Section ── */}
-      <div className="flex justify-between items-start mb-8">
-        <div>
-          <p className="text-sm font-bold text-purple-900 uppercase tracking-widest mb-1 shadow-sm">
-            {format(today, "EEEE, d MMMM yyyy", { locale: id })}
-          </p>
-          <h1 className="text-4xl font-black text-[#1E1B4B] mb-2 drop-shadow-sm flex items-center gap-2">
-            Halo, <span className="text-[#8B5CF6]">{user.name}!</span> 👋
-          </h1>
-          <p className="text-sm font-medium text-purple-800">
-            Kamu punya {totalActive} tugas aktif. Yuk kita selesaikan satu per satu!
-          </p>
-          <div className="flex gap-4 mt-6">
-            <button
-              onClick={() => setView("chat")}
-              className="flex items-center gap-2 bg-gradient-to-r from-[#d946ef] to-[#ec4899] text-white px-6 py-3.5 rounded-[1.2rem] font-bold text-sm shadow-[0_8px_16px_rgba(236,72,153,0.3)] hover:scale-105 transition-transform"
-            >
-              <MessageSquare size={18} /> Cek Penjadwalan MILKUN.AI <ArrowRight size={16} />
-            </button>
-            <button
-              onClick={() => setView("schedules")}
-              className="flex items-center gap-2 bg-white text-purple-900 px-6 py-3.5 rounded-[1.2rem] font-bold text-sm shadow-[0_4px_10px_rgba(0,0,0,0.05)] hover:shadow-lg transition-transform hover:scale-105"
-            >
-              <CalendarCheck size={18} className="text-[#8B5CF6]" /> Lihat Semua Jadwal
-            </button>
+    <div className="flex-1 h-full overflow-y-auto custom-scrollbar" style={{
+      background: "linear-gradient(165deg,#f6f8ff 0%,#f0edff 45%,#eef6ff 100%)"
+    }}>
+
+      {/* ════════════════════ HERO HEADER ════════════════════ */}
+      <div className="relative px-8 pt-8 pb-0 overflow-hidden">
+        {/* Decorative blob */}
+        <div className="absolute -top-10 -right-10 w-72 h-72 rounded-full opacity-20 pointer-events-none"
+          style={{ background: "radial-gradient(circle,#c084fc,transparent 70%)" }} />
+
+        <div className="relative flex justify-between items-center">
+          <div>
+            <p className="text-[11px] font-black text-purple-400 uppercase tracking-widest mb-1">
+              {format(today, "EEEE, d MMMM yyyy", { locale: id })}
+            </p>
+            <h1 className="text-[2.4rem] font-black leading-none text-[#1e1b4b]">
+              Halo, <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#a855f7] to-[#ec4899]">{user.name}!</span> ✨
+            </h1>
+            <p className="mt-2 text-sm font-semibold text-purple-500/80">
+              {totalActive > 0
+                ? `${totalActive} agenda menunggu — fokus yuk!`
+                : "Hari ini kosong. Waktunya istirahat atau tambah jadwal baru 🎉"}
+            </p>
+          </div>
+
+          {/* Stat chips */}
+          <div className="flex gap-3 shrink-0">
+            {([
+              { v: user.xp,        lbl: "Total XP",   g: ["#c084fc","#a855f7"], sh: "rgba(168,85,247,.3)" },
+              { v: user.streakDays,lbl: "Streak",      g: ["#fb923c","#f97316"], sh: "rgba(249,115,22,.3)" },
+              { v: totalDone,      lbl: "Selesai",     g: ["#34d399","#10b981"], sh: "rgba(16,185,129,.3)" },
+            ] as const).map(s => (
+              <div key={s.lbl}
+                className="w-[90px] h-[90px] rounded-2xl flex flex-col items-center justify-center text-white hover:-translate-y-1 transition-transform shrink-0"
+                style={{ background: `linear-gradient(135deg,${s.g[0]},${s.g[1]})`, boxShadow: `0 8px 20px ${s.sh}` }}>
+                <p className="text-2xl font-black leading-none">{s.v}</p>
+                <p className="text-[9px] font-bold uppercase tracking-widest mt-1 opacity-90">{s.lbl}</p>
+              </div>
+            ))}
           </div>
         </div>
 
-        {/* ── Top Right 3 Cards ── */}
-        <div className="flex gap-4">
-          <div className="bg-gradient-to-br from-[#d091fb] to-[#ab5bf9] rounded-[1.5rem] w-[100px] h-[100px] flex flex-col items-center justify-center text-white shadow-[0_12px_24px_rgba(168,85,247,0.4)] hover:-translate-y-1 transition-transform">
-            <p className="text-3xl font-black">{user.xp}</p>
-            <p className="text-[9px] uppercase font-bold tracking-widest opacity-90 mt-1">Total XP</p>
-          </div>
-          <div className="bg-gradient-to-br from-[#fcb323] to-[#f7940e] rounded-[1.5rem] w-[100px] h-[100px] flex flex-col items-center justify-center text-white shadow-[0_12px_24px_rgba(245,158,11,0.4)] hover:-translate-y-1 transition-transform">
-            <p className="text-3xl font-black">{user.streakDays}</p>
-            <p className="text-[9px] uppercase font-bold tracking-widest opacity-90 mt-1">Hari Streak</p>
-          </div>
-          <div className="bg-gradient-to-br from-[#30deb4] to-[#12b77a] rounded-[1.5rem] w-[100px] h-[100px] flex flex-col items-center justify-center text-white shadow-[0_12px_24px_rgba(16,185,129,0.4)] hover:-translate-y-1 transition-transform">
-            <p className="text-3xl font-black">{totalDone}</p>
-            <p className="text-[9px] uppercase font-bold tracking-widest opacity-90 mt-1">Selesai</p>
-          </div>
-        </div>
+        {/* Thin divider */}
+        <div className="mt-6 h-px bg-gradient-to-r from-transparent via-purple-200 to-transparent" />
       </div>
 
-      <div className="grid grid-cols-3 gap-6">
-        
-        {/* ── Left Column (2 spans) ── */}
-        <div className="col-span-2 flex flex-col gap-6">
-          
-          {/* Kuliah Hari Ini */}
-          <section>
-            <h2 className="text-[11px] font-black text-purple-900 uppercase tracking-widest mb-3 flex items-center gap-2">
-              📅 Kuliah Hari Ini
-            </h2>
-            <div className="bg-gradient-to-r from-[#d95df4] to-[#fb7cbc] rounded-[1.5rem] p-5 text-white shadow-[0_10px_25px_rgba(217,70,239,0.25)]">
-              {todayClasses.length === 0 ? (
-                <p className="font-bold text-sm">Tidak ada kuliah hari ini.</p>
-              ) : (
-                todayClasses.map(cls => (
-                  <div key={cls.id} className="flex justify-between items-center">
-                    <div>
-                      <p className="text-[9px] font-bold uppercase tracking-widest opacity-80 flex items-center gap-1.5"><Goal size={12}/> Sacred Time</p>
-                      <h3 className="text-xl font-bold mt-0.5">{cls.subjectName}</h3>
-                    </div>
-                    <div className="bg-white/25 border border-white/40 px-4 py-1.5 rounded-full text-sm font-bold shadow-sm">
-                      {cls.startTime} - {cls.endTime}
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </section>
+      {/* ════════════════════ BODY ════════════════════ */}
+      <div className="px-8 py-6 flex gap-6">
 
-          {/* Deadline Hari Ini */}
-          <section>
-            <h2 className="text-[11px] font-black text-purple-900 uppercase tracking-widest mb-3 flex items-center gap-2">
-              🔥 Deadline Hari Ini
-            </h2>
-            <div className="bg-gradient-to-r from-[#ff826a] to-[#ff5d66] rounded-[1.5rem] p-5 text-white shadow-[0_10px_25px_rgba(244,63,94,0.25)]">
-              {todayDeadlines.length === 0 ? (
-                <p className="font-bold text-sm">Wah, aman! Tidak ada deadline hari ini.</p>
-              ) : (
-                todayDeadlines.map(sch => {
-                  const intent = INTENT_LABELS[sch.type] || INTENT_LABELS.UNKNOWN;
-                  return (
-                    <div key={sch.id} className="flex justify-between items-center">
-                      <div className="flex gap-4 items-center">
-                        <div className="w-12 h-12 rounded-[1rem] flex items-center justify-center shrink-0 shadow-[inset_0_2px_4px_rgba(255,255,255,0.4),_0_4px_12px_rgba(244,63,94,0.3)] border-2 border-white/50 bg-white/20 transition-transform">
-                          {getElegantIcon(sch.type)}
-                        </div>
-                        <div>
-                          <p className="text-[9px] font-bold uppercase tracking-widest opacity-80 mb-0.5 shadow-sm">{intent.label}</p>
-                          <h3 className="text-xl font-bold shadow-sm leading-tight">{sch.title}</h3>
-                        </div>
-                      </div>
-                      <div className="bg-white/25 border border-white/40 px-4 py-1.5 rounded-full text-sm font-bold shadow-sm">
-                        HARI INI!
-                      </div>
-                    </div>
-                  );
-                })
-              )}
-            </div>
-          </section>
+        {/* ────── MAIN: 3 Focus Cards (left 2/3) ────── */}
+        <div className="flex-1 flex flex-col gap-5 min-w-0">
 
-          {/* Mendatang Section */}
-          <section>
-            <h2 className="text-[11px] font-black text-purple-900 uppercase tracking-widest mb-3 flex items-center gap-2 mt-2">
-              📋 Mendatang
-            </h2>
-            <div className="flex flex-col gap-4">
-              {upcomingDeadlines.length === 0 ? (
-                <div className="bg-white/80 backdrop-blur-md rounded-[1.5rem] p-6 text-center font-bold text-purple-300 border border-white/60 shadow-sm">
-                  Belum ada tugas mendesak.
+          {/* ══ 1. KULIAH HARI INI — clean glass hero card ══ */}
+          <div className="relative bg-white/80 border border-white rounded-3xl overflow-hidden shadow-[0_8px_32px_rgba(99,102,241,0.10)]">
+            {/* Soft top accent bar */}
+            <div className="h-1 w-full bg-gradient-to-r from-[#818cf8] via-[#a855f7] to-[#e879f9]" />
+
+            <div className="p-6">
+              <div className="flex items-center gap-2.5 mb-4">
+                <div className="w-8 h-8 rounded-xl bg-indigo-100 flex items-center justify-center">
+                  <Clock size={15} className="text-indigo-500" />
                 </div>
+                <p className="text-[11px] font-black text-indigo-700 uppercase tracking-widest">Kuliah Hari Ini</p>
+              </div>
+
+              {todayClass.length === 0 ? (
+                <p className="text-slate-400 font-semibold text-sm py-2">Tidak ada sesi kuliah hari ini.</p>
               ) : (
-                upcomingDeadlines.map((sch, i) => {
-                  const intent = INTENT_LABELS[sch.type] || INTENT_LABELS.UNKNOWN;
-                  const days = sch.deadlineAt ? differenceInDays(new Date(sch.deadlineAt), today) : null;
-                  return (
-                    <div 
-                      key={sch.id} 
-                      className="relative rounded-[1.5rem] overflow-hidden shadow-[0_4px_20px_rgba(31,38,135,0.05)] hover:shadow-[0_8px_30px_rgba(31,38,135,0.1)] hover:-translate-y-0.5 transition-all group border border-white/60 bg-white/40 backdrop-blur-md"
-                      style={{ backgroundImage: `linear-gradient(135deg, ${intent.color}15 0%, rgba(255,255,255,0.5) 100%)` }}
-                    >
-                      {/* Soft Top Glow instead of solid stripe */}
-                      <div className="absolute top-0 left-0 right-0 h-1 blur-[2px]" style={{ backgroundColor: intent.color }} />
-                      
-                      <div className="p-4 flex items-center justify-between">
-                        <div className="flex items-center gap-4 flex-1">
-                          {/* Elegant thick icon box */}
-                          <div 
-                            className="w-12 h-12 rounded-[1rem] flex items-center justify-center shrink-0 shadow-[0_4px_12px_rgba(31,38,135,0.1),_inset_0_2px_4px_rgba(255,255,255,0.3)] border-2 border-white/50 group-hover:scale-110 group-hover:rotate-6 transition-transform" 
-                            style={{ backgroundColor: intent.color }}
-                          >
-                            {getElegantIcon(sch.type)}
+                <div className="flex flex-col gap-3">
+                  {todayClass.map(cls => (
+                    <div key={cls.id} className="flex justify-between items-center bg-indigo-50/70 border border-indigo-100 rounded-2xl px-5 py-3.5">
+                      <div>
+                        <p className="text-[9px] font-black text-indigo-400 uppercase tracking-widest mb-0.5">🔒 Sacred Time</p>
+                        <h3 className="text-xl font-black text-[#1e1b4b]">{cls.subjectName}</h3>
+                      </div>
+                      <div className="bg-indigo-600 text-white px-4 py-2 rounded-full text-sm font-bold shadow-sm">
+                        {cls.startTime} – {cls.endTime}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* ══ 2. DEADLINE HARI INI + 3. MENDATANG side by side ══ */}
+          <div className="grid grid-cols-2 gap-5">
+
+            {/* ── 2. Deadline Hari Ini ── */}
+            <div className="relative bg-white/80 border border-white rounded-3xl overflow-hidden shadow-[0_8px_24px_rgba(244,63,94,0.09)]">
+              <div className="h-1 w-full bg-gradient-to-r from-[#fb7185] to-[#f43f5e]" />
+
+              <div className="p-5">
+                <div className="flex items-center gap-2.5 mb-4">
+                  <div className="w-8 h-8 rounded-xl bg-rose-100 flex items-center justify-center">
+                    <Flame size={15} className="text-rose-500" />
+                  </div>
+                  <p className="text-[11px] font-black text-rose-700 uppercase tracking-widest">Deadline Hari Ini</p>
+                </div>
+
+                {todayDue.length === 0 ? (
+                  <div className="flex flex-col items-center py-5 gap-2">
+                    <CheckCircle2 size={30} className="text-emerald-400" />
+                    <p className="text-[#1e1b4b] font-black text-sm">Aman! Tidak ada.</p>
+                    <p className="text-slate-400 text-[11px]">Nikmati harimu 🌸</p>
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-2.5">
+                    {todayDue.map(sch => {
+                      const intent = INTENT_LABELS[sch.type] || INTENT_LABELS.UNKNOWN;
+                      return (
+                        <div key={sch.id} className="flex items-center gap-3 bg-rose-50 border border-rose-100 rounded-2xl px-3 py-2.5">
+                          <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+                            style={{ backgroundColor: intent.color }}>
+                            {getIcon(sch.type)}
                           </div>
-                          <div>
-                            <h3 className="font-bold text-[#1e1b4b] text-base mb-1">{sch.title}</h3>
-                            <div className="flex gap-2 items-center">
-                              <span className="text-[9px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-md bg-white border border-white/50 shadow-sm" style={{ color: intent.color }}>{intent.label}</span>
-                              <span className="text-[10px] font-bold text-purple-500/80 uppercase tracking-widest px-2 py-1 bg-white/40 rounded-md">
-                                {sch.deadlineAt ? format(new Date(sch.deadlineAt), "d MMM yyyy", { locale: id }) : "-"}
-                              </span>
-                            </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-bold text-[#1e1b4b] text-sm leading-tight truncate">{sch.title}</p>
+                            <p className="text-slate-400 text-[10px]">{intent.label}</p>
                           </div>
+                          <span className="shrink-0 bg-rose-500 text-white text-[9px] font-black px-2.5 py-1 rounded-full">DUE!</span>
                         </div>
-                        <div className="shrink-0 text-right ml-4">
-                          <p className="text-[9px] uppercase tracking-widest font-black text-purple-400 mb-0.5">SISA</p>
-                          <p className={`font-black text-sm ${days === 0 ? "text-[#f43f5e] animate-pulse drop-shadow-sm" : "text-[#f97316]"}`}>
-                            {days === 0 ? "HARI INI!" : days === null ? "-" : `${days} hari`}
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* ── 3. Mendatang ── */}
+            <div className="relative bg-white/80 border border-white rounded-3xl overflow-hidden shadow-[0_8px_24px_rgba(139,92,246,0.09)]">
+              <div className="h-1 w-full bg-gradient-to-r from-[#a78bfa] to-[#818cf8]" />
+              <div className="px-5 pt-5 pb-0 flex items-center gap-2.5 mb-3">
+                <div className="w-8 h-8 rounded-xl bg-violet-100 flex items-center justify-center">
+                  <CalendarDays size={15} className="text-violet-500" />
+                </div>
+                <p className="text-[11px] font-black text-violet-700 uppercase tracking-widest">Mendatang</p>
+              </div>
+
+              <div className="px-5 pb-5 flex flex-col gap-2">
+                {upcoming.length === 0 ? (
+                  <div className="text-center py-6">
+                    <p className="text-purple-300 font-bold text-sm">Belum ada agenda</p>
+                  </div>
+                ) : (
+                  upcoming.map(sch => {
+                    const intent = INTENT_LABELS[sch.type] || INTENT_LABELS.UNKNOWN;
+                    const days = sch.deadlineAt ? differenceInDays(new Date(sch.deadlineAt), today) : null;
+                    const badge = dayBadge(days);
+                    return (
+                      <div key={sch.id}
+                        className="group flex items-center gap-3 rounded-2xl px-3 py-2.5 hover:bg-purple-50/60 transition-colors">
+                        <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform"
+                          style={{ backgroundColor: intent.color }}>
+                          {getIcon(sch.type)}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-bold text-[#1e1b4b] text-sm leading-tight truncate">{sch.title}</p>
+                          <p className="text-[10px] text-purple-400">
+                            {sch.deadlineAt ? format(new Date(sch.deadlineAt), "d MMM", { locale: id }) : "—"}
                           </p>
                         </div>
+                        <span className={`text-[10px] font-black px-2.5 py-1 rounded-full shrink-0 ${badge.cls}`}>
+                          {badge.txt}
+                        </span>
                       </div>
-                    </div>
-                  );
-                })
-              )}
+                    );
+                  })
+                )}
+              </div>
             </div>
-          </section>
-
+          </div>
         </div>
 
-        {/* ── Right Column ── */}
-        <div className="flex flex-col gap-6">
-          
-          {/* Aksi Cepat */}
-          <section>
-            <h2 className="text-[11px] font-black text-purple-900 uppercase tracking-widest mb-3 flex items-center gap-2">
-               ⚡ Aksi Cepat
-            </h2>
-            <div className="flex flex-col gap-3">
-              <button onClick={() => setView("chat")} className="w-full flex justify-between items-center text-white font-bold bg-gradient-to-r from-[#df5fdd] to-[#ff7fc5] rounded-[1.2rem] px-5 py-4 shadow-[0_8px_20px_rgba(236,72,153,0.25)] hover:-translate-y-0.5 transition-transform">
-                <span className="flex items-center gap-2 text-sm drop-shadow-sm"><span className="text-lg">📝</span> Tambah jadwal baru</span>
-                <ArrowRight size={16}/>
-              </button>
-              <button onClick={() => setView("study")} className="w-full flex justify-between items-center text-white font-bold bg-gradient-to-r from-[#fcb320] to-[#fd800a] rounded-[1.2rem] px-5 py-4 shadow-[0_8px_20px_rgba(245,158,11,0.25)] hover:-translate-y-0.5 transition-transform">
-                <span className="flex items-center gap-2 text-sm drop-shadow-sm"><span className="text-lg">📚</span> Mulai sesi belajar</span>
-                <ArrowRight size={16}/>
-              </button>
-              <button onClick={() => setView("calendar")} className="w-full flex justify-between items-center text-white font-bold bg-gradient-to-r from-[#21d0ff] to-[#04b5f4] rounded-[1.2rem] px-5 py-4 shadow-[0_8px_20px_rgba(14,165,233,0.25)] hover:-translate-y-0.5 transition-transform">
-                <span className="flex items-center gap-2 text-sm drop-shadow-sm"><span className="text-lg">📅</span> Lihat kalender</span>
-                <ArrowRight size={16}/>
-              </button>
+        {/* ────── SIDEBAR: Secondary features (right 1/3) ────── */}
+        <div className="w-64 shrink-0 flex flex-col gap-5">
+
+          {/* Quick Actions */}
+          <div className="relative rounded-3xl p-5 overflow-hidden"
+            style={{
+              background: "rgba(255,255,255,0.55)",
+              backdropFilter: "blur(20px)",
+              WebkitBackdropFilter: "blur(20px)",
+              border: "1px solid rgba(255,255,255,0.85)",
+              boxShadow: "0 8px 32px rgba(99,102,241,0.08), inset 0 1px 0 rgba(255,255,255,0.9)"
+            }}>
+            <p className="text-[10px] font-black text-purple-700 uppercase tracking-widest mb-3 flex items-center gap-1.5">
+              <Zap size={12} className="text-[#a855f7]" /> Aksi Cepat
+            </p>
+            <div className="flex flex-col gap-2">
+              {([
+                { label: "Chat AI", sub: "Tambah jadwal", view: "chat",      icon: <MessageSquare size={14}/>, g: ["#d946ef","#a855f7"] },
+                { label: "Jadwal",  sub: "Semua agenda",  view: "schedules", icon: <CalendarCheck  size={14}/>, g: ["#3b82f6","#06b6d4"] },
+                { label: "Belajar", sub: "Study Room",    view: "study",     icon: <BookOpen        size={14}/>, g: ["#f59e0b","#f97316"] },
+              ] as const).map(b => (
+                <button key={b.view}
+                  onClick={() => setView(b.view)}
+                  className="group flex items-center gap-3 rounded-2xl px-3 py-2.5 text-white hover:-translate-y-0.5 transition-all shadow-sm hover:shadow-md text-left"
+                  style={{ background: `linear-gradient(135deg,${b.g[0]},${b.g[1]})` }}>
+                  <div className="w-7 h-7 bg-white/20 rounded-xl flex items-center justify-center shrink-0">{b.icon}</div>
+                  <div className="flex-1">
+                    <p className="font-black text-sm leading-tight">{b.label}</p>
+                    <p className="text-white/70 text-[10px]">{b.sub}</p>
+                  </div>
+                  <ArrowRight size={13} className="opacity-60 group-hover:opacity-100" />
+                </button>
+              ))}
             </div>
-          </section>
+          </div>
 
           {/* Gamifikasi */}
-          <section>
-            <h2 className="text-[11px] font-black text-purple-900 uppercase tracking-widest mb-3 flex items-center gap-2">
-               🏆 Gamifikasi
-            </h2>
-            <div className="bg-white rounded-[1.5rem] p-6 shadow-sm border border-white/60">
-              <div className="flex items-center gap-4 mb-5">
-                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#d946ef] to-[#8b5cf6] text-white flex items-center justify-center text-lg font-bold shadow-[0_4px_12px_rgba(139,92,246,0.25)]">
-                  {user.name.substring(0,2).toUpperCase()}
-                </div>
-                <div>
-                  <h3 className="font-bold text-[#1e1b4b] text-base leading-tight">{user.name}</h3>
-                  <p className="text-[#8B5CF6] text-[10px] uppercase font-bold tracking-widest mt-0.5">Level {user.level}</p>
-                </div>
-              </div>
+          <div className="relative rounded-3xl p-5 overflow-hidden"
+            style={{
+              background: "rgba(255,255,255,0.55)",
+              backdropFilter: "blur(20px)",
+              WebkitBackdropFilter: "blur(20px)",
+              border: "1px solid rgba(255,255,255,0.85)",
+              boxShadow: "0 8px 32px rgba(99,102,241,0.08), inset 0 1px 0 rgba(255,255,255,0.9)"
+            }}>
+            <p className="text-[10px] font-black text-purple-700 uppercase tracking-widest mb-4 flex items-center gap-1.5">
+              <Trophy size={12} className="text-[#a855f7]" /> Progres Kamu
+            </p>
 
-              <div className="flex justify-between items-end mb-1">
-                <p className="font-bold text-[#1e1b4b] text-sm">{user.xp} XP</p>
+            {/* Avatar */}
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-[#d946ef] to-[#8b5cf6] text-white flex items-center justify-center font-black text-lg shadow-md">
+                {user.name.substring(0, 2).toUpperCase()}
               </div>
-              
-              <div className="w-full h-2.5 bg-purple-100 rounded-full overflow-hidden mb-6">
-                <div className="h-full bg-gradient-to-r from-[#a855f7] to-[#ec4899] rounded-full" style={{ width: `${Math.min(100, (user.xp / 100) * 100)}%` }}></div>
+              <div>
+                <p className="font-black text-[#1e1b4b] text-sm">{user.name}</p>
+                <p className="text-[10px] text-[#8b5cf6] font-bold uppercase">Lv {user.level}</p>
               </div>
-
-              <div className="grid grid-cols-3 gap-2">
-                <div className="bg-[#fefce8] rounded-xl py-2 flex flex-col items-center justify-center border border-yellow-100">
-                   <p className="text-yellow-500 font-bold text-base mb-1"><Flame size={16}/></p>
-                   <p className="text-[8px] font-black uppercase text-yellow-500 tracking-wider text-center">{user.streakDays}<br/>HARI</p>
-                </div>
-                <div className="bg-[#ecfdf5] rounded-xl py-2 flex flex-col items-center justify-center border border-green-100">
-                   <p className="text-green-500 font-bold text-base mb-0.5">{totalDone}</p>
-                   <p className="text-[8px] font-black uppercase text-green-500 tracking-wider text-center">SELESAI</p>
-                </div>
-                <div className="bg-[#faf5ff] rounded-xl py-2 flex flex-col items-center justify-center border border-purple-100">
-                   <p className="text-[#a855f7] font-bold text-base mb-0.5">{user.badges.length}</p>
-                   <p className="text-[8px] font-black uppercase text-[#a855f7] tracking-wider text-center">BADGE</p>
-                </div>
-              </div>
-
             </div>
-          </section>
+
+            {/* XP bar */}
+            <div className="mb-4">
+              <div className="flex justify-between text-[9px] font-bold text-purple-400 mb-1">
+                <span>XP Progress</span><span>{user.xp} XP</span>
+              </div>
+              <div className="h-2 bg-purple-100 rounded-full overflow-hidden">
+                <div className="h-full rounded-full bg-gradient-to-r from-[#a855f7] to-[#ec4899] transition-all"
+                  style={{ width: `${Math.min(100, user.xp % 100)}%` }} />
+              </div>
+            </div>
+
+            {/* Mini stats */}
+            <div className="grid grid-cols-3 gap-1.5">
+              {[
+                { ico: <Flame size={12} className="text-orange-400"/>, v: user.streakDays, lbl: "Streak", bg: "bg-orange-50 border-orange-100", c: "text-orange-500" },
+                { ico: <CheckCircle2 size={12} className="text-green-500"/>, v: totalDone, lbl: "Done", bg: "bg-green-50 border-green-100", c: "text-green-600" },
+                { ico: <Trophy size={12} className="text-purple-500"/>, v: user.badges.length, lbl: "Badge", bg: "bg-purple-50 border-purple-100", c: "text-purple-600" },
+              ].map(s => (
+                <div key={s.lbl} className={`${s.bg} border rounded-xl py-2.5 flex flex-col items-center gap-0.5`}>
+                  {s.ico}
+                  <p className={`font-black text-sm leading-none ${s.c}`}>{s.v}</p>
+                  <p className={`text-[8px] font-black uppercase ${s.c} opacity-70`}>{s.lbl}</p>
+                </div>
+              ))}
+            </div>
+          </div>
 
         </div>
-
       </div>
     </div>
   );
