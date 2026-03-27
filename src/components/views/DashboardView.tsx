@@ -1,16 +1,18 @@
 "use client";
+import Image from "next/image";
 import { useAppStore } from "@/lib/store";
 import { INTENT_LABELS } from "@/lib/types";
 import { format, isToday, differenceInDays } from "date-fns";
 import { id } from "date-fns/locale";
 import {
-  MessageSquare, CalendarCheck, ArrowRight, Flame, BookOpen,
+  MessageSquare, CalendarCheck, Flame, BookOpen,
   ClipboardList, PenTool, MonitorPlay, Dumbbell, Star, CalendarDays,
-  Activity, Trophy, Zap, CheckCircle2, Clock
+  Activity, Trophy, CheckCircle2, Clock, Info
 } from "lucide-react";
 
+// Helper for dynamic icons
 const getIcon = (type: string) => {
-  const p = { size: 18, strokeWidth: 2.5, className: "text-white" };
+  const p = { size: 16, strokeWidth: 2.5, className: "text-white" };
   if (type.includes("DEADLINE")) return <ClipboardList {...p} />;
   if (type.includes("EXAM"))     return <PenTool {...p} />;
   if (type.includes("STUDY") || type === "CLASS") return <BookOpen {...p} />;
@@ -22,290 +24,281 @@ const getIcon = (type: string) => {
   return <CalendarDays {...p} />;
 };
 
+// Helper for Mendatang badges
 const dayBadge = (days: number | null) => {
-  if (days === null) return { txt: "—", cls: "bg-slate-100 text-slate-400" };
-  if (days === 0)    return { txt: "Hari Ini!", cls: "bg-[#f43f5e] text-white" };
-  if (days <= 2)     return { txt: `${days}h lagi`, cls: "bg-[#f97316] text-white" };
+  if (days === null) return { txt: "—",         cls: "bg-slate-100 text-slate-400" };
+  if (days === 0)    return { txt: "Hari Ini!",  cls: "bg-red-500 text-white shadow-sm shadow-red-500/30" };
+  if (days <= 2)     return { txt: `${days}h lagi`, cls: "bg-orange-500 text-white shadow-sm shadow-orange-500/30" };
   if (days <= 7)     return { txt: `${days}h lagi`, cls: "bg-orange-100 text-orange-600" };
-  return               { txt: `${days}h lagi`, cls: "bg-purple-100 text-purple-600" };
+  return               { txt: `${days}h lagi`, cls: "bg-indigo-100 text-indigo-600" };
 };
 
 export default function DashboardView() {
-  const { schedules, classSchedules, user, setView } = useAppStore();
+  const { schedules, classSchedules, user, setView, completeSchedule } = useAppStore();
 
-  const today       = new Date();
-  const dow         = today.getDay() === 0 ? 7 : today.getDay();
-  const todayClass  = classSchedules.filter(c => c.dayOfWeek === dow && c.isActive);
-  const todayDue    = schedules.filter(s => !s.isCompleted && s.deadlineAt && isToday(new Date(s.deadlineAt)));
-  const upcoming    = schedules
+  const today      = new Date();
+  const dow        = today.getDay() === 0 ? 7 : today.getDay();
+  
+  // Active classes today (To be pinned in Informasi)
+  const todayClass = classSchedules.filter(c => c.dayOfWeek === dow && c.isActive);
+  
+  // All schedules today (Uncompleted)
+  const todaySched = schedules.filter(s => !s.isCompleted && s.deadlineAt && isToday(new Date(s.deadlineAt)));
+  
+  // ALL incoming deadlines (Assignments, Tasks, Exams, Projects)
+  const allDeadlines = schedules
     .filter(s => !s.isCompleted && s.deadlineAt)
+    .filter(s => s.type.includes("ASSIGNMENT") || s.type.includes("TASK") || s.type.includes("DEADLINE") || s.type.includes("PROJECT"))
+    .sort((a,b) => new Date(a.deadlineAt!).getTime() - new Date(b.deadlineAt!).getTime());
+
+  // Informasi Buat Mu (Upcoming Info Intents - everything else)
+  const infoIntents = ["EXAM", "WEBINAR", "MEETING", "CLASS", "STUDY", "EVENT", "PERSONAL", "WORKOUT", "RUNNING", "COMPETITION"];
+  
+  const upcomingInfo = schedules
+    .filter(s => !s.isCompleted && s.deadlineAt)
+    .filter(s => !isToday(new Date(s.deadlineAt!))) // Not happening today
+    .filter(s => infoIntents.some(i => s.type.includes(i)))
     .sort((a, b) => new Date(a.deadlineAt!).getTime() - new Date(b.deadlineAt!).getTime())
     .slice(0, 5);
 
-  const totalDone   = schedules.filter(s =>  s.isCompleted).length;
-  const totalActive = schedules.filter(s => !s.isCompleted).length;
+  const totalDone   = schedules.filter(s => s.isCompleted).length;
 
   return (
-    <div className="flex-1 h-full overflow-y-auto custom-scrollbar bg-transparent">
-
-      {/* ════════════════════ HERO HEADER ════════════════════ */}
-      <div className="relative px-8 pt-8 pb-0 overflow-hidden">
-        {/* Decorative blob */}
-        <div className="absolute -top-10 -right-10 w-72 h-72 rounded-full opacity-20 pointer-events-none"
-          style={{ background: "radial-gradient(circle,#c084fc,transparent 70%)" }} />
-
-        <div className="relative flex justify-between items-center">
-          <div>
-            <p className="text-[11px] font-black text-purple-400 uppercase tracking-widest mb-1">
-              {format(today, "EEEE, d MMMM yyyy", { locale: id })}
-            </p>
-            <h1 className="text-[2.4rem] font-black leading-none text-[#1e1b4b]">
-              Halo, <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#a855f7] to-[#ec4899]">{user.name}!</span> ✨
-            </h1>
-            <p className="mt-2 text-sm font-semibold text-purple-500/80">
-              {totalActive > 0
-                ? `${totalActive} agenda menunggu — fokus yuk!`
-                : "Hari ini kosong. Waktunya istirahat atau tambah jadwal baru 🎉"}
-            </p>
+    <div className="flex-1 h-full overflow-y-auto custom-scrollbar bg-transparent pb-10">
+      {/* ════════ HERO HEADER ════════ */}
+      <div className="relative pt-6 px-8 flex flex-col md:flex-row gap-6 md:gap-8 items-end z-10 w-full">
+        
+        {/* Mascot + Floating Gamification */}
+        <div className="shrink-0 relative flex flex-col justify-end items-center drop-shadow-[0_16px_32px_rgba(244,63,94,0.15)]" style={{ width: 440, height: 440, marginBottom: -10 }}>
+          
+          {/* Gepeng Floating Gamification Card (On Top of Mascot Layer) */}
+          <div className="absolute top-[8%] left-1/2 -translate-x-1/2 z-50 flex items-center gap-6 bg-white/60 backdrop-blur-2xl px-6 py-3 rounded-[2rem] shadow-[0_12px_40px_rgba(244,63,94,0.15)] border border-white w-max hover:scale-105 transition-transform">
+            {/* XP */}
+            <div className="flex flex-col items-center justify-center">
+              <p className="text-[26px] font-black text-transparent bg-clip-text bg-gradient-to-br from-red-600 to-rose-500 leading-none">{user.xp}</p>
+              <p className="text-[10px] font-black uppercase tracking-widest text-rose-400/80 mt-1">Total XP</p>
+            </div>
+            <div className="w-px h-8 bg-rose-200/50" />
+            {/* Streak */}
+            <div className="flex flex-col items-center justify-center">
+              <p className="text-[26px] font-black text-transparent bg-clip-text bg-gradient-to-br from-orange-500 to-amber-500 leading-none">{user.streakDays}</p>
+              <p className="text-[10px] font-black uppercase tracking-widest text-orange-400/80 mt-1">Streak</p>
+            </div>
+            <div className="w-px h-8 bg-rose-200/50" />
+            {/* Selesai */}
+            <div className="flex flex-col items-center justify-center">
+              <p className="text-[26px] font-black text-transparent bg-clip-text bg-gradient-to-br from-emerald-500 to-teal-500 leading-none">{totalDone}</p>
+              <p className="text-[10px] font-black uppercase tracking-widest text-emerald-400/80 mt-1">Selesai</p>
+            </div>
           </div>
 
-          {/* Stat chips */}
-          <div className="flex gap-3 shrink-0">
-            {([
-              { v: user.xp,        lbl: "Total XP",   g: ["#c084fc","#a855f7"], sh: "rgba(168,85,247,.3)" },
-              { v: user.streakDays,lbl: "Streak",      g: ["#fb923c","#f97316"], sh: "rgba(249,115,22,.3)" },
-              { v: totalDone,      lbl: "Selesai",     g: ["#34d399","#10b981"], sh: "rgba(16,185,129,.3)" },
-            ] as const).map(s => (
-              <div key={s.lbl}
-                className="w-[90px] h-[90px] rounded-2xl flex flex-col items-center justify-center text-white hover:-translate-y-1 transition-transform shrink-0"
-                style={{ background: `linear-gradient(135deg,${s.g[0]},${s.g[1]})`, boxShadow: `0 8px 20px ${s.sh}` }}>
-                <p className="text-2xl font-black leading-none">{s.v}</p>
-                <p className="text-[9px] font-bold uppercase tracking-widest mt-1 opacity-90">{s.lbl}</p>
-              </div>
-            ))}
-          </div>
+          <Image 
+            src="/mascot.png" 
+            alt="Mascot" 
+            fill 
+            style={{ objectFit: "contain", objectPosition: "bottom" }} 
+            priority
+            className="pointer-events-none"
+          />
         </div>
 
-        {/* Thin divider */}
-        <div className="mt-6 h-px bg-gradient-to-r from-transparent via-purple-200 to-transparent" />
-      </div>
+        {/* Halo & Jadwal Hari Ini Box */}
+        <div className="flex-1 pb-4 min-w-0 w-full shrink-0">
+          <p className="text-xs font-bold text-red-500 uppercase tracking-widest mb-1 opacity-90">
+            {format(today, "EEEE, d MMMM yyyy", { locale: id })}
+          </p>
+          
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-2">
+            <h1 className="text-[2.6rem] font-serif font-black text-[#1a1a1a] tracking-tight drop-shadow-sm">
+              Halo, <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-600 via-rose-500 to-orange-500">{user.name}!</span>
+            </h1>
 
-      {/* ════════════════════ BODY ════════════════════ */}
-      <div className="px-8 py-6 flex gap-6">
+            {/* Aksi Cepat Small Buttons next to Name */}
+            <div className="flex items-center gap-2">
+              <button onClick={() => setView("chat")} className="group flex items-center gap-2 bg-gradient-to-b from-white to-rose-50/50 hover:to-rose-100/60 text-rose-600 px-3 py-2 rounded-[14px] text-[11px] font-black uppercase tracking-wider transition-all border border-rose-100 shadow-[0_4px_16px_rgba(244,63,94,0.1)] hover:shadow-[0_6px_20px_rgba(244,63,94,0.15)] hover:-translate-y-0.5">
+                <MessageSquare size={14} className="group-hover:scale-110 transition-transform" /> Tanya AI
+              </button>
+              <button onClick={() => setView("schedules")} className="group flex items-center gap-2 bg-gradient-to-b from-white to-blue-50/50 hover:to-blue-100/60 text-blue-600 px-3 py-2 rounded-[14px] text-[11px] font-black uppercase tracking-wider transition-all border border-blue-100 shadow-[0_4px_16px_rgba(59,130,246,0.1)] hover:shadow-[0_6px_20px_rgba(59,130,246,0.15)] hover:-translate-y-0.5">
+                <CalendarCheck size={14} className="group-hover:scale-110 transition-transform" /> Jadwal
+              </button>
+              <button onClick={() => setView("study")} className="group flex items-center gap-2 bg-gradient-to-b from-white to-amber-50/50 hover:to-amber-100/60 text-amber-600 px-3 py-2 rounded-[14px] text-[11px] font-black uppercase tracking-wider transition-all border border-amber-100 shadow-[0_4px_16px_rgba(245,158,11,0.1)] hover:shadow-[0_6px_20px_rgba(245,158,11,0.15)] hover:-translate-y-0.5">
+                <BookOpen size={14} className="group-hover:scale-110 transition-transform" /> Fokus
+              </button>
+            </div>
+          </div>
+          
+          <p className="text-sm text-slate-500 font-medium mb-5">
+            {todaySched.length > 0 ? `${todaySched.length} agenda menunggu hari ini.` : "Hari ini santai! Belum ada daftar kegiatan."}
+          </p>
 
-        {/* ────── MAIN: 3 Focus Cards (left 2/3) ────── */}
-        <div className="flex-1 flex flex-col gap-5 min-w-0">
-
-          {/* ══ 1. KULIAH HARI INI — clean glass hero card ══ */}
-          <div className="relative bg-white/80 border border-white rounded-3xl overflow-hidden shadow-[0_8px_32px_rgba(99,102,241,0.10)]">
-            {/* Soft top accent bar */}
-            <div className="h-1 w-full bg-gradient-to-r from-[#818cf8] via-[#a855f7] to-[#e879f9]" />
-
-            <div className="p-6">
-              <div className="flex items-center gap-2.5 mb-4">
-                <div className="w-8 h-8 rounded-xl bg-indigo-100 flex items-center justify-center">
-                  <Clock size={15} className="text-indigo-500" />
-                </div>
-                <p className="text-[11px] font-black text-indigo-700 uppercase tracking-widest">Kuliah Hari Ini</p>
-              </div>
-
-              {todayClass.length === 0 ? (
-                <p className="text-slate-400 font-semibold text-sm py-2">Tidak ada sesi kuliah hari ini.</p>
+          {/* Jadwal Hari Ini Card with Glass Accent */}
+          <div className="bg-gradient-to-br from-white/90 to-red-50/20 backdrop-blur-2xl border border-red-100/50 rounded-[24px] p-5 shadow-[0_12px_40px_rgba(244,63,94,0.06)] pr-4">
+            <div className="flex items-center gap-2 mb-4 px-1">
+              <CalendarCheck size={16} className="text-red-500" /> 
+              <p className="text-[11px] font-black text-red-600 uppercase tracking-widest">Jadwal Hari Ini</p>
+            </div>
+            
+            {/* Scrollable list */}
+            <div className="overflow-y-auto custom-scrollbar pr-2 flex flex-col gap-2.5" style={{ maxHeight: "180px" }}>
+              {todaySched.length === 0 ? (
+                <p className="text-sm text-slate-400 py-4 px-2 font-medium">Bebas! Nikmati waktu harimu sekarang.</p>
               ) : (
-                <div className="flex flex-col gap-3">
-                  {todayClass.map(cls => (
-                    <div key={cls.id} className="flex justify-between items-center bg-indigo-50/70 border border-indigo-100 rounded-2xl px-5 py-3.5">
-                      <div>
-                        <p className="text-[9px] font-black text-indigo-400 uppercase tracking-widest mb-0.5">🔒 Sacred Time</p>
-                        <h3 className="text-xl font-black text-[#1e1b4b]">{cls.subjectName}</h3>
+                todaySched.map(sch => {
+                  const intent = INTENT_LABELS[sch.type] || INTENT_LABELS.UNKNOWN;
+                  return (
+                    <div key={sch.id} className="flex gap-3 items-center bg-white/80 border border-red-50 hover:border-red-100 transition-colors rounded-2xl p-2.5 shadow-sm">
+                      <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 shadow-sm" style={{ backgroundColor: intent.color }}>
+                        {getIcon(sch.type)}
                       </div>
-                      <div className="bg-indigo-600 text-white px-4 py-2 rounded-full text-sm font-bold shadow-sm">
-                        {cls.startTime} – {cls.endTime}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-bold text-[#1a1a1a] truncate leading-tight">{sch.title}</p>
+                        <p className="text-[10px] text-slate-400 font-semibold mt-0.5 uppercase tracking-wide">{intent.label}</p>
                       </div>
                     </div>
-                  ))}
-                </div>
+                  );
+                })
               )}
             </div>
           </div>
+        </div>
+      </div>
 
-          {/* ══ 2. DEADLINE HARI INI + 3. MENDATANG side by side ══ */}
-          <div className="grid grid-cols-2 gap-5">
+      <div className="px-8 mt-5 relative z-10">
+        <div className="h-px w-full bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
+      </div>
 
-            {/* ── 2. Deadline Hari Ini ── */}
-            <div className="relative bg-white/80 border border-white rounded-3xl overflow-hidden shadow-[0_8px_24px_rgba(244,63,94,0.09)]">
-              <div className="h-1 w-full bg-gradient-to-r from-[#fb7185] to-[#f43f5e]" />
-
-              <div className="p-5">
-                <div className="flex items-center gap-2.5 mb-4">
-                  <div className="w-8 h-8 rounded-xl bg-rose-100 flex items-center justify-center">
-                    <Flame size={15} className="text-rose-500" />
-                  </div>
-                  <p className="text-[11px] font-black text-rose-700 uppercase tracking-widest">Deadline Hari Ini</p>
+      {/* ════════ BODY ════════ */}
+      <div className="px-8 mt-6 grid grid-cols-1 lg:grid-cols-2 gap-8 items-start w-full relative z-10">
+          
+        {/* Fokus Tugas & Pendaftaran */}
+        <div className="bg-gradient-to-br from-white/90 to-rose-50/30 backdrop-blur-2xl rounded-[32px] border border-rose-100/40 shadow-[0_12px_40px_rgba(244,63,94,0.06)] p-6">
+          <div className="flex gap-2 items-center text-rose-500 mb-6 px-1">
+            <Flame size={18} /> 
+            <p className="text-xs font-black uppercase tracking-widest text-[#1a1a1a]">Mandatori & Deadline</p>
+          </div>
+          <div className="flex flex-col gap-3">
+            {allDeadlines.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-10 bg-white/50 rounded-[24px] border border-dashed border-emerald-200">
+                <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mb-3">
+                  <CheckCircle2 size={32} className="text-emerald-500 drop-shadow-sm" />
                 </div>
-
-                {todayDue.length === 0 ? (
-                  <div className="flex flex-col items-center py-5 gap-2">
-                    <CheckCircle2 size={30} className="text-emerald-400" />
-                    <p className="text-[#1e1b4b] font-black text-sm">Aman! Tidak ada.</p>
-                    <p className="text-slate-400 text-[11px]">Nikmati harimu 🌸</p>
-                  </div>
-                ) : (
-                  <div className="flex flex-col gap-2.5">
-                    {todayDue.map(sch => {
-                      const intent = INTENT_LABELS[sch.type] || INTENT_LABELS.UNKNOWN;
-                      return (
-                        <div key={sch.id} className="flex items-center gap-3 bg-rose-50 border border-rose-100 rounded-2xl px-3 py-2.5">
-                          <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-                            style={{ backgroundColor: intent.color }}>
-                            {getIcon(sch.type)}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="font-bold text-[#1e1b4b] text-sm leading-tight truncate">{sch.title}</p>
-                            <p className="text-slate-400 text-[10px]">{intent.label}</p>
-                          </div>
-                          <span className="shrink-0 bg-rose-500 text-white text-[9px] font-black px-2.5 py-1 rounded-full">DUE!</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
+                <p className="text-lg font-black text-[#1a1a1a]">Good job!</p>
+                <p className="text-sm font-semibold text-slate-400 mt-1 max-w-[200px] text-center">
+                  Keren banget kamu udah selesaikan semuanya.
+                </p>
               </div>
-            </div>
+            ) : (
+              allDeadlines.map(sch => {
+                const timeObj = sch.deadlineAt ? new Date(sch.deadlineAt) : null;
+                const timeStr = timeObj ? format(timeObj, "HH:mm") : "";
+                const isTimeSet = timeStr && timeStr !== "00:00";
+                const isTd = timeObj ? isToday(timeObj) : false;
+                const dBadge = dayBadge(timeObj ? differenceInDays(timeObj, today) : null);
 
-            {/* ── 3. Mendatang ── */}
-            <div className="relative bg-white/80 border border-white rounded-3xl overflow-hidden shadow-[0_8px_24px_rgba(139,92,246,0.09)]">
-              <div className="h-1 w-full bg-gradient-to-r from-[#a78bfa] to-[#818cf8]" />
-              <div className="px-5 pt-5 pb-0 flex items-center gap-2.5 mb-3">
-                <div className="w-8 h-8 rounded-xl bg-violet-100 flex items-center justify-center">
-                  <CalendarDays size={15} className="text-violet-500" />
-                </div>
-                <p className="text-[11px] font-black text-violet-700 uppercase tracking-widest">Mendatang</p>
-              </div>
+                return (
+                  <div key={sch.id} className="group flex gap-3.5 items-center bg-white/80 border border-rose-100 hover:border-rose-300 rounded-[20px] p-3 transition-colors shadow-[0_4px_16px_rgba(244,63,94,0.04)]">
+                    {/* Checkbox button */}
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); completeSchedule(sch.id); }}
+                      className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 border-2 border-rose-300 text-rose-500 hover:border-emerald-400 hover:text-emerald-500 hover:bg-emerald-50 transition-all mr-1 bg-white"
+                      title="Tandai Selesai"
+                    >
+                      <CheckCircle2 size={24} className="opacity-100 transition-opacity" />
+                    </button>
 
-              <div className="px-5 pb-5 flex flex-col gap-2">
-                {upcoming.length === 0 ? (
-                  <div className="text-center py-6">
-                    <p className="text-purple-300 font-bold text-sm">Belum ada agenda</p>
-                  </div>
-                ) : (
-                  upcoming.map(sch => {
-                    const intent = INTENT_LABELS[sch.type] || INTENT_LABELS.UNKNOWN;
-                    const days = sch.deadlineAt ? differenceInDays(new Date(sch.deadlineAt), today) : null;
-                    const badge = dayBadge(days);
-                    return (
-                      <div key={sch.id}
-                        className="group flex items-center gap-3 rounded-2xl px-3 py-2.5 hover:bg-purple-50/60 transition-colors">
-                        <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform"
-                          style={{ backgroundColor: intent.color }}>
-                          {getIcon(sch.type)}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-bold text-[#1e1b4b] text-sm leading-tight truncate">{sch.title}</p>
-                          <p className="text-[10px] text-purple-400">
-                            {sch.deadlineAt ? format(new Date(sch.deadlineAt), "d MMM", { locale: id }) : "—"}
-                          </p>
-                        </div>
-                        <span className={`text-[10px] font-black px-2.5 py-1 rounded-full shrink-0 ${badge.cls}`}>
-                          {badge.txt}
-                        </span>
+                    <div className="flex-1 min-w-0 pr-2">
+                      <p className="font-bold text-[#1a1a1a] text-[15px] truncate">{sch.title}</p>
+                      
+                      <div className="flex items-center gap-2 mt-1 -ml-0.5">
+                        <p className={`text-[10px] font-black uppercase tracking-widest ${isTd ? 'text-rose-500' : 'text-slate-400'}`}>
+                          {isTd ? "HARI INI" : timeObj ? format(timeObj, "d MMM") : "TIDAK ADA DEADLINE"}
+                        </p>
+                        {isTimeSet && (
+                          <>
+                            <div className="w-1 h-1 rounded-full bg-rose-200" />
+                            <p className="text-[10px] font-black text-rose-500 bg-rose-50 px-1.5 py-0.5 rounded-md">{timeStr}</p>
+                          </>
+                        )}
+                        {!isTd && dBadge.txt !== "—" && (
+                          <span className={`${dBadge.cls} text-[9px] font-black px-1.5 py-0.5 rounded-md uppercase tracking-wider ml-auto shadow-none`}>
+                            {dBadge.txt}
+                          </span>
+                        )}
                       </div>
-                    );
-                  })
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* ────── SIDEBAR: Secondary features (right 1/3) ────── */}
-        <div className="w-64 shrink-0 flex flex-col gap-5">
-
-          {/* Quick Actions */}
-          <div className="relative rounded-3xl p-5 overflow-hidden"
-            style={{
-              background: "rgba(255,255,255,0.55)",
-              backdropFilter: "blur(20px)",
-              WebkitBackdropFilter: "blur(20px)",
-              border: "1px solid rgba(255,255,255,0.85)",
-              boxShadow: "0 8px 32px rgba(99,102,241,0.08), inset 0 1px 0 rgba(255,255,255,0.9)"
-            }}>
-            <p className="text-[10px] font-black text-purple-700 uppercase tracking-widest mb-3 flex items-center gap-1.5">
-              <Zap size={12} className="text-[#a855f7]" /> Aksi Cepat
-            </p>
-            <div className="flex flex-col gap-2">
-              {([
-                { label: "Chat AI", sub: "Tambah jadwal", view: "chat",      icon: <MessageSquare size={14}/>, g: ["#d946ef","#a855f7"] },
-                { label: "Jadwal",  sub: "Semua agenda",  view: "schedules", icon: <CalendarCheck  size={14}/>, g: ["#3b82f6","#06b6d4"] },
-                { label: "Belajar", sub: "Study Room",    view: "study",     icon: <BookOpen        size={14}/>, g: ["#f59e0b","#f97316"] },
-              ] as const).map(b => (
-                <button key={b.view}
-                  onClick={() => setView(b.view)}
-                  className="group flex items-center gap-3 rounded-2xl px-3 py-2.5 text-white hover:-translate-y-0.5 transition-all shadow-sm hover:shadow-md text-left"
-                  style={{ background: `linear-gradient(135deg,${b.g[0]},${b.g[1]})` }}>
-                  <div className="w-7 h-7 bg-white/20 rounded-xl flex items-center justify-center shrink-0">{b.icon}</div>
-                  <div className="flex-1">
-                    <p className="font-black text-sm leading-tight">{b.label}</p>
-                    <p className="text-white/70 text-[10px]">{b.sub}</p>
+                    </div>
                   </div>
-                  <ArrowRight size={13} className="opacity-60 group-hover:opacity-100" />
-                </button>
-              ))}
-            </div>
+                );
+              })
+            )}
           </div>
-
-          {/* Gamifikasi */}
-          <div className="relative rounded-3xl p-5 overflow-hidden"
-            style={{
-              background: "rgba(255,255,255,0.55)",
-              backdropFilter: "blur(20px)",
-              WebkitBackdropFilter: "blur(20px)",
-              border: "1px solid rgba(255,255,255,0.85)",
-              boxShadow: "0 8px 32px rgba(99,102,241,0.08), inset 0 1px 0 rgba(255,255,255,0.9)"
-            }}>
-            <p className="text-[10px] font-black text-purple-700 uppercase tracking-widest mb-4 flex items-center gap-1.5">
-              <Trophy size={12} className="text-[#a855f7]" /> Progres Kamu
-            </p>
-
-            {/* Avatar */}
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-[#d946ef] to-[#8b5cf6] text-white flex items-center justify-center font-black text-lg shadow-md">
-                {user.name.substring(0, 2).toUpperCase()}
-              </div>
-              <div>
-                <p className="font-black text-[#1e1b4b] text-sm">{user.name}</p>
-                <p className="text-[10px] text-[#8b5cf6] font-bold uppercase">Lv {user.level}</p>
-              </div>
-            </div>
-
-            {/* XP bar */}
-            <div className="mb-4">
-              <div className="flex justify-between text-[9px] font-bold text-purple-400 mb-1">
-                <span>XP Progress</span><span>{user.xp} XP</span>
-              </div>
-              <div className="h-2 bg-purple-100 rounded-full overflow-hidden">
-                <div className="h-full rounded-full bg-gradient-to-r from-[#a855f7] to-[#ec4899] transition-all"
-                  style={{ width: `${Math.min(100, user.xp % 100)}%` }} />
-              </div>
-            </div>
-
-            {/* Mini stats */}
-            <div className="grid grid-cols-3 gap-1.5">
-              {[
-                { ico: <Flame size={12} className="text-orange-400"/>, v: user.streakDays, lbl: "Streak", bg: "bg-orange-50 border-orange-100", c: "text-orange-500" },
-                { ico: <CheckCircle2 size={12} className="text-green-500"/>, v: totalDone, lbl: "Done", bg: "bg-green-50 border-green-100", c: "text-green-600" },
-                { ico: <Trophy size={12} className="text-purple-500"/>, v: user.badges.length, lbl: "Badge", bg: "bg-purple-50 border-purple-100", c: "text-purple-600" },
-              ].map(s => (
-                <div key={s.lbl} className={`${s.bg} border rounded-xl py-2.5 flex flex-col items-center gap-0.5`}>
-                  {s.ico}
-                  <p className={`font-black text-sm leading-none ${s.c}`}>{s.v}</p>
-                  <p className={`text-[8px] font-black uppercase ${s.c} opacity-70`}>{s.lbl}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-
         </div>
+
+        {/* Informasi Buat Mu (Replaces Segera Mendatang) */}
+        <div className="bg-gradient-to-br from-white/90 to-violet-50/30 backdrop-blur-2xl rounded-[32px] border border-violet-100/40 shadow-[0_12px_40px_rgba(139,92,246,0.06)] p-6">
+          <div className="flex gap-2 items-center text-violet-500 mb-6 px-1">
+            <Info size={18} /> 
+            <p className="text-xs font-black uppercase tracking-widest text-[#1a1a1a]">Informasi Buat Mu</p>
+          </div>
+          <div className="flex flex-col gap-3">
+            
+            {/* Pinned: Jadwal Kuliah Hari Ini */}
+            {todayClass.map(cls => (
+              <div key={cls.id} className="relative flex gap-4 items-center rounded-[20px] p-4 shadow-[0_8px_24px_rgba(244,63,94,0.3)] overflow-hidden text-white" 
+                style={{ background: "linear-gradient(135deg, #FF3000, #f43f5e)" }}>
+                {/* Glass sheen highlight */}
+                <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/20 to-white/0 pointer-events-none" />
+                <div className="relative w-10 h-10 flex items-center justify-center bg-white/20 rounded-xl backdrop-blur-sm shadow-inner shrink-0">
+                  <Clock size={18} />
+                </div>
+                <div className="relative flex-1 min-w-0">
+                  <p className="font-black text-[15px] truncate leading-tight drop-shadow-sm">{cls.subjectName}</p>
+                  <p className="text-[10px] font-bold mt-1 text-white/90 uppercase tracking-widest">MULAI • {cls.startTime} - {cls.endTime}</p>
+                </div>
+                <span className="relative text-[10px] font-black px-3 py-1.5 rounded-[10px] bg-white/20 backdrop-blur-sm border border-white/20 shrink-0 shadow-sm">
+                  KULIAH
+                </span>
+              </div>
+            ))}
+
+            {/* Upcoming Informations */}
+            {upcomingInfo.length === 0 && todayClass.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-10 bg-white/40 rounded-[24px] border border-dashed border-violet-100">
+                <p className="text-sm font-semibold text-violet-300">Belum ada info terbaru</p>
+              </div>
+            ) : (
+              upcomingInfo.map(sch => {
+                const intent = INTENT_LABELS[sch.type] || INTENT_LABELS.UNKNOWN;
+                const timeObj = sch.deadlineAt ? new Date(sch.deadlineAt) : null;
+                const days = timeObj ? differenceInDays(timeObj, today) : null;
+                const badge = dayBadge(days);
+                const timeStr = timeObj ? format(timeObj, "HH:mm") : "";
+                const isTimeSet = timeStr && timeStr !== "00:00";
+                
+                return (
+                  <div key={sch.id} className="group flex gap-3.5 items-center bg-white/90 border border-violet-50 hover:border-violet-200 p-3 rounded-[20px] transition-colors shadow-[0_4px_16px_rgba(139,92,246,0.03)] hover:shadow-[0_8px_24px_rgba(139,92,246,0.08)]">
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white shrink-0 shadow-inner" style={{ backgroundColor: intent.color }}>
+                      {getIcon(sch.type)}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-bold text-[#1a1a1a] text-[15px] truncate leading-tight">{sch.title}</p>
+                      <div className="flex items-center gap-1.5 mt-1">
+                        <p className="text-[11px] text-slate-400 font-semibold uppercase tracking-wider">{timeObj ? format(timeObj, "d MMM yyyy") : "—"}</p>
+                        {isTimeSet && (
+                          <>
+                            <div className="w-1.5 h-1.5 rounded-full bg-violet-200" />
+                            <p className="text-[11px] font-black text-violet-500 bg-violet-50 px-1.5 py-0.5 rounded-md">{timeStr}</p>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                    <span className={`text-[11px] font-black px-3 py-1.5 rounded-xl ${badge.cls} shrink-0 shadow-sm`}>{badge.txt}</span>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+
       </div>
     </div>
   );

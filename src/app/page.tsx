@@ -137,7 +137,7 @@ export default function Home() {
         style={{ background: "linear-gradient(135deg, #1a0b2e, #4c1d63, #7f1d4f)" }}
       >
         <div className="w-8 h-8 border-2 border-white/20 border-t-pink-400 rounded-full animate-spin" />
-        <p className="text-white/60 text-sm font-medium">Memuat MILKUN.AI...</p>
+        <p className="text-white/60 text-sm font-medium">Memuat SISIBUK...</p>
       </div>
     );
   }

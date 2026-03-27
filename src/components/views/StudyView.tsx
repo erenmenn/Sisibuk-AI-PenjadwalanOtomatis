@@ -174,7 +174,7 @@ export default function StudyView() {
                 </div>
                 <h3 className="text-xl font-black text-[#1e1b4b] mb-2">Belum ada rencana belajar</h3>
                 <p className="text-sm text-purple-600 mb-6 max-w-xs mx-auto">
-                  Chat dengan MILKUN.AI dan bilang:<br />
+                  Chat dengan SISIBUK.AI dan bilang:<br />
                   <span className="inline-block mt-2 font-bold px-4 py-2 bg-purple-100 rounded-xl text-purple-700">
                     &quot;Aku mau belajar React dan AI!&quot;
                   </span>

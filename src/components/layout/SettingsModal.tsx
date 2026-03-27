@@ -359,7 +359,7 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
                   <div className="bg-gradient-to-br from-purple-50 to-pink-50 border border-purple-100 rounded-2xl p-5">
                     <p className="font-semibold text-sm text-purple-700 mb-1">✨ Versi Aplikasi</p>
-                    <p className="text-xs text-purple-600">MILKUN.AI v1.0 · Powered by LLaMA 3.3 via Groq + Supabase</p>
+                    <p className="text-xs text-purple-600">SISIBUK.AI v1.0 · Powered by LLaMA 3.3 via Groq + Supabase</p>
                   </div>
                 </div>
               )}

@@ -1,5 +1,6 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
+import Image from "next/image";
 import { useAppStore } from "@/lib/store";
 import { Send, Sparkles, CheckCircle, Hash, ArrowRight } from "lucide-react";
 import { format, addDays } from "date-fns";
@@ -123,6 +124,29 @@ export default function ChatView() {
   const [waitingForDates, setWaitingForDates] = useState(false);
   const [showWelcome, setShowWelcome] = useState(true);
   const endRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    // 6 hour reset logic
+    if (messages.length > 0) {
+      const lastMsg = messages[messages.length - 1];
+      if (lastMsg.createdAt) {
+        const hoursSinceLast = (new Date().getTime() - new Date(lastMsg.createdAt).getTime()) / (1000 * 60 * 60);
+        if (hoursSinceLast >= 6) {
+          useAppStore.getState().clearChat();
+        }
+      }
+    }
+    
+    // Auto greeting if empty
+    if (useAppStore.getState().messages.length === 0) {
+      setTimeout(() => {
+        addMessage({ 
+          role: "assistant", 
+          content: "Halo aku teman kamu di aplikasi SISIBUK AI, panggil aku Si Manis! 💕" 
+        });
+      }, 500);
+    }
+  }, []);
 
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages, isAiTyping]);
   useEffect(() => {
@@ -283,16 +307,16 @@ export default function ChatView() {
               <div key={msg.id}>
                 <div className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"} animate-in fade-in slide-in-from-bottom-2`}>
                   {msg.role === "assistant" && (
-                    <div className="w-10 h-10 rounded-[1rem] bg-gradient-to-br from-[#c084fc] to-[#ec4899] flex items-center justify-center text-white mr-3 shrink-0 shadow-md border border-white/50">
-                      <Sparkles size={18} />
+                    <div className="w-14 h-14 rounded-full flex items-center justify-center mr-4 shrink-0 overflow-hidden relative shadow-sm border border-white/50">
+                      <Image src="/bot_icon.png" alt="Si Manis" fill style={{ objectFit: "cover" }} className="scale-110" />
                     </div>
                   )}
-                  <div className={`max-w-[80%] rounded-[1.5rem] px-5 py-4 shadow-sm ${
+                  <div className={`max-w-[85%] ${
                     msg.role === "user"
-                      ? "bg-gradient-to-r from-[#d946ef] to-[#ec4899] text-white rounded-tr-md shadow-[0_4px_15px_rgba(236,72,153,0.3)] border border-white/20"
-                      : "bg-white/80 backdrop-blur-md rounded-tl-md text-[#1e1b4b] border border-white/60 shadow-sm"
+                      ? "px-5 py-4 bg-gradient-to-r from-[#d946ef] to-[#ec4899] text-white rounded-[1.5rem] rounded-tr-md shadow-[0_4px_15px_rgba(236,72,153,0.3)] border border-white/20"
+                      : "py-2 text-[#1e1b4b]"
                   }`}>
-                    <div className={`prose prose-sm max-w-none leading-relaxed prose-p:my-0.5 font-bold ${msg.role === "user" ? "prose-invert" : "prose-p:text-[#1e1b4b] prose-strong:text-purple-700"}`}>
+                    <div className={`prose max-w-none leading-relaxed prose-p:my-0.5 ${msg.role === "user" ? "prose-sm font-bold prose-invert" : "prose-base font-medium prose-p:text-[#1e1b4b] prose-strong:text-purple-700"}`}>
                       <ReactMarkdown>{msg.content}</ReactMarkdown>
                     </div>
                     {/* Render Badges Beneath the text */}
@@ -343,13 +367,13 @@ export default function ChatView() {
 
             {isAiTyping && (
               <div className="flex items-end animate-in fade-in">
-                <div className="w-10 h-10 rounded-[1rem] bg-gradient-to-br from-[#c084fc] to-[#ec4899] flex items-center justify-center text-white mr-3 shrink-0 shadow-md border border-white/50">
-                  <Sparkles size={18} />
+                <div className="w-14 h-14 rounded-full flex items-center justify-center mr-4 shrink-0 overflow-hidden relative shadow-sm border border-white/50">
+                  <Image src="/bot_icon.png" alt="Si Manis" fill style={{ objectFit: "cover" }} className="scale-110" />
                 </div>
-                <div className="bg-white/80 backdrop-blur-md rounded-[1.5rem] rounded-tl-md px-5 py-4 flex gap-1.5 shadow-sm border border-white/60">
-                  <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce [animation-delay:-0.3s]" />
-                  <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce [animation-delay:-0.15s]" />
-                  <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" />
+                <div className="py-4 flex gap-1.5 items-center">
+                  <div className="w-2.5 h-2.5 bg-purple-400 rounded-full animate-bounce [animation-delay:-0.3s]" />
+                  <div className="w-2.5 h-2.5 bg-purple-400 rounded-full animate-bounce [animation-delay:-0.15s]" />
+                  <div className="w-2.5 h-2.5 bg-purple-400 rounded-full animate-bounce" />
                 </div>
               </div>
             )}

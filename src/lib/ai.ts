@@ -13,7 +13,7 @@ function buildSystemPrompt(schedules: Schedule[]): string {
   const today = new Date().toISOString().split("T")[0];
   const activeSch = schedules.filter(s => !s.isCompleted).map(s => `- ${s.title} (${s.deadlineAt || "no date"})`).join("\n");
   
-  return `Kamu adalah AI assistant produktivitas bernama "MILKUN.AI".
+  return `Kamu adalah AI assistant produktivitas bernama "SISIBUK.AI".
 Tugasmu: Pahami pesan user lalu balas dalam format JSON murni.
 
 JSON SCHEMA:

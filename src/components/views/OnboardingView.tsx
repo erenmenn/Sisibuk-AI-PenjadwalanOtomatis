@@ -35,7 +35,7 @@ export default function OnboardingView() {
             </div>
             
             <h1 className="text-3xl font-display font-bold text-[var(--color-text-primary)] mb-2 tracking-wide">
-              MILKUN<span className="text-[#7C3AED]">.AI</span>
+              SISIBUK<span className="text-[#7C3AED]">.AI</span>
             </h1>
             <p className="text-sm font-medium text-gray-400 mb-8 whitespace-pre-line leading-relaxed">
               {"Ngobrol sama jadwal kamu.\nBiar aku yang ingat, kamu yang eksekusi."}

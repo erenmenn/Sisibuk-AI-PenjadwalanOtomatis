@@ -1,248 +1,218 @@
-import { useState, useEffect } from "react";
+"use client";
+import { useState } from "react";
 import { supabase } from "@/lib/supabase";
-import { Sparkles, ArrowRight, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 
-// Inline styles for the shooting star animation and glowing effects
-const customStyles = `
-  @keyframes shootingStar {
-    0% {
-      transform: translateX(0) translateY(0) rotate(-45deg) scale(1);
-      opacity: 1;
-    }
-    100% {
-      transform: translateX(-1500px) translateY(1500px) rotate(-45deg) scale(0.2);
-      opacity: 0;
-    }
+/* ─── Keyframes & Styles ─────────────────────────────────────── */
+const S = `
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
   }
 
-  .shooting-star {
-    position: absolute;
-    width: 120px;
-    height: 2px;
-    background: linear-gradient(90deg, rgba(255,255,255,0.8), transparent);
-    border-radius: 50%;
-    filter: drop-shadow(0 0 6px rgba(255,255,255,0.8));
-    animation: shootingStar 4s linear infinite;
-    pointer-events: none;
+  .card-in {
+    animation: fadeUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   }
 
-  .shooting-star::before {
-    content: '';
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 6px;
-    height: 6px;
-    background: white;
-    border-radius: 50%;
-    box-shadow: 0 0 12px 2px rgba(255, 255, 255, 0.9);
+  /* Inputs */
+  .min-inp {
+    width: 100%; 
+    padding: 14px 16px;
+    border: 1px solid rgba(0, 0, 0, 0.08); 
+    border-radius: 12px;
+    font-size: 14px; 
+    font-family: 'Inter', sans-serif;
+    color: #000; 
+    background: rgba(255, 255, 255, 0.5);
+    outline: none; 
+    box-sizing: border-box;
+    transition: all 0.3s ease;
   }
+  .min-inp:focus {
+    background: rgba(255, 255, 255, 0.9);
+    border-color: rgba(232, 19, 43, 0.8);
+    box-shadow: 0 0 0 4px rgba(232, 19, 43, 0.1);
+  }
+  .min-inp::placeholder { color: #999; }
 
-  /* Different delays and positions for stars */
-  .star-1 { top: 0%; left: 80%; animation-delay: 0s; animation-duration: 3s; }
-  .star-2 { top: 10%; left: 100%; animation-delay: 1.2s; animation-duration: 4s; }
-  .star-3 { top: -20%; left: 50%; animation-delay: 2.5s; animation-duration: 3.5s; }
-  .star-4 { top: 30%; left: 120%; animation-delay: 0.8s; animation-duration: 4.5s; }
-  .star-5 { top: -10%; left: 30%; animation-delay: 3s; animation-duration: 4s; }
-  
-  @keyframes blob-spin {
-    0% { transform: rotate(0deg) scale(1); }
-    50% { transform: rotate(180deg) scale(1.1); }
-    100% { transform: rotate(360deg) scale(1); }
+  /* Submit button */
+  .min-btn {
+    width: 100%; 
+    padding: 15px;
+    border: none; 
+    border-radius: 12px; 
+    cursor: pointer;
+    background: linear-gradient(135deg, #E8132B 0%, #B70F22 100%);
+    color: #fff; 
+    font-weight: 600; 
+    font-size: 14px;
+    font-family: 'Inter', sans-serif;
+    box-shadow: 0 4px 14px rgba(232, 19, 43, 0.25);
+    transition: all 0.2s ease;
   }
-  
-  .animate-blob-spin {
-    animation: blob-spin 20s infinite linear;
+  .min-btn:hover  { 
+    background: linear-gradient(135deg, #F01A35 0%, #C41226 100%); 
+    box-shadow: 0 6px 20px rgba(232, 19, 43, 0.35);
+    transform: translateY(-1px);
   }
+  .min-btn:active { transform: scale(0.98) translateY(0); }
+  .min-btn:disabled { opacity: 0.7; cursor: not-allowed; transform: none; box-shadow: none; }
 `;
 
 export default function LoginView({ onLoginSuccess }: { onLoginSuccess: () => void }) {
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
+  const [name, setName]         = useState("");
+  const [email, setEmail]       = useState("");
   const [password, setPassword] = useState("");
-  const [isLogin, setIsLogin] = useState(true);
-  const [loading, setLoading] = useState(false);
-  const [errorMsg, setErrorMsg] = useState("");
+  const [isLogin, setIsLogin]   = useState(true);
+  const [loading, setLoading]   = useState(false);
+  const [errorMsg, setErrorMsg]     = useState("");
+  const [successMsg, setSuccessMsg] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-    setErrorMsg("");
-
+    setLoading(true); setErrorMsg(""); setSuccessMsg("");
     try {
       if (isLogin) {
-        const { error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
         onLoginSuccess();
       } else {
         const { error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            emailRedirectTo: `${window.location.origin}/auth/callback`,
-            data: {
-              name,
-            }
-          }
+          email, password,
+          options: { emailRedirectTo: `${window.location.origin}/auth/callback`, data: { name } },
         });
         if (error) throw error;
-        setErrorMsg(""); 
-      setIsLogin(true);
-    }
-  } catch (error: unknown) {
-    if (error instanceof Error) {
-      setErrorMsg(error.message || "Terjadi kesalahan.");
-    } else {
-      setErrorMsg("Terjadi kesalahan.");
-    }
-  } finally {
-    setLoading(false);
-  }
+        setSuccessMsg("Akun berhasil dibuat. Silakan cek email kamu.");
+        setIsLogin(true);
+      }
+    } catch (err: unknown) {
+      setErrorMsg(err instanceof Error ? err.message : "Terjadi kesalahan.");
+    } finally { setLoading(false); }
   };
 
   return (
-    <div className="relative w-full h-screen overflow-hidden flex items-center justify-center bg-gray-900 selection:bg-pink-500/30">
-      <style>{customStyles}</style>
+    <div style={{
+      position: "relative", width: "100%", height: "100vh",
+      overflow: "hidden", display: "flex",
+      alignItems: "center", justifyContent: "center",
+      backgroundImage: "url('/bg-login.png')",
+      backgroundPosition: "left center",
+      backgroundSize: "cover",
+      backgroundRepeat: "no-repeat",
+      backgroundColor: "#ffffff",
+      fontFamily: "'Inter', sans-serif",
+    }}>
+      <style>{S}</style>
 
-      {/* Background Gradients */}
-      <div className="absolute inset-0 bg-gradient-to-br from-[#1a0b2e] via-[#4c1d63] to-[#7f1d4f] z-0" />
-      
-      {/* Animated Glowing Orbs */}
-      <div className="absolute top-[10%] left-[20%] w-[500px] h-[500px] bg-purple-500/30 rounded-full blur-[120px] mix-blend-screen animate-blob-spin pointer-events-none z-0" />
-      <div className="absolute bottom-[10%] right-[10%] w-[600px] h-[600px] bg-pink-500/20 rounded-full blur-[150px] mix-blend-screen animate-blob-spin pointer-events-none z-0" style={{ animationDirection: 'reverse', animationDuration: '25s' }} />
+      {/* ══════════ CONTENT WRAPPER ══════════ */}
+      <div style={{
+        position: "relative", zIndex: 10,
+        width: "100%", maxWidth: "1200px",
+        display: "flex", alignItems: "center",
+        justifyContent: "flex-end",
+        padding: "0 48px",
+      }}>
 
-      {/* Shooting Stars Overlay */}
-      <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
-        <div className="shooting-star star-1"></div>
-        <div className="shooting-star star-2"></div>
-        <div className="shooting-star star-3"></div>
-        <div className="shooting-star star-4"></div>
-        <div className="shooting-star star-5"></div>
-      </div>
+        {/* ════ RIGHT: Minimalist Login Card ════ */}
+        <div className="card-in" style={{ width: "380px", flexShrink: 0 }}>
+          <div style={{
+            position: "relative",
+            overflow: "hidden",
+            background: "rgba(255, 255, 255, 0.7)",
+            backdropFilter: "blur(24px)",
+            WebkitBackdropFilter: "blur(24px)",
+            borderRadius: "20px",
+            padding: "40px",
+            boxShadow: "0 8px 32px rgba(0, 0, 0, 0.04)",
+            border: "1px solid rgba(255, 255, 255, 0.6)",
+          }}>
+            {/* ── gradient accent bar top ── */}
+            <div style={{
+              position: "absolute", top: 0, left: 0, right: 0, height: "4px",
+              background: "linear-gradient(90deg, #FF3000, #E8132B, #B70F22)",
+            }}/>
+            
+            {/* Header */}
+            <div style={{ marginBottom: "32px" }}>
+              <h2 style={{
+                margin: 0,
+                fontWeight: 600,
+                fontSize: "24px",
+                color: "#111",
+                letterSpacing: "-0.5px",
+              }}>
+                {isLogin ? "Masuk" : "Daftar"}
+              </h2>
+              <p style={{ margin: "8px 0 0", fontSize: "14px", color: "#666" }}>
+                {isLogin ? "Kembali ke SISIBUK" : "Mulai atur jadwalmu dengan AI"}
+              </p>
+            </div>
 
-      {/* Grid Pattern Overlay */}
-      <div className="absolute inset-0 z-[1] opacity-[0.03] pointer-events-none" 
-           style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,0.8) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.8) 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
+            {/* Messages */}
+            {errorMsg && (
+              <div style={{
+                marginBottom: "20px", padding: "12px",
+                background: "rgba(255, 59, 48, 0.08)", border: "1px solid rgba(255, 59, 48, 0.2)",
+                borderRadius: "10px", color: "#d32f2f",
+                fontSize: "13px",
+              }}>{errorMsg}</div>
+            )}
+            {successMsg && (
+              <div style={{
+                marginBottom: "20px", padding: "12px",
+                background: "rgba(52, 199, 89, 0.08)", border: "1px solid rgba(52, 199, 89, 0.2)",
+                borderRadius: "10px", color: "#2e7d32",
+                fontSize: "13px",
+              }}>{successMsg}</div>
+            )}
 
-      {/* Main Content Container */}
-      <div className="relative z-10 w-full max-w-5xl flex flex-col md:flex-row items-center gap-12 px-6">
-        
-        {/* Left Side: Branding & Copy */}
-        <div className="flex-1 text-white text-center md:text-left mb-8 md:mb-0">
-          <div className="inline-flex items-center justify-center px-4 py-1.5 rounded-full bg-white/5 border border-white/10 backdrop-blur-md mb-6 shadow-[0_0_20px_rgba(236,72,153,0.3)]">
-            <Sparkles className="w-4 h-4 text-pink-300 mr-2" />
-            <span className="text-sm font-semibold text-pink-100 tracking-wide uppercase">AI-Powered Planning</span>
-          </div>
-          
-          <h1 className="text-5xl md:text-7xl font-black font-syne tracking-tight mb-6 leading-[1.1]">
-            <span className="text-white">Jadwal Anda,</span><br/>
-            <span className="bg-gradient-to-r from-purple-300 via-pink-400 to-orange-400 bg-clip-text text-transparent">Lebih Cerdas.</span>
-          </h1>
-          
-          <p className="text-lg md:text-xl text-purple-100/80 max-w-lg mx-auto md:mx-0 font-medium leading-relaxed">
-            MILKUN.AI menyusun, mengingatkan, dan beradaptasi dengan aktivitas Anda secara otomatis.
-          </p>
-        </div>
-
-        {/* Right Side: Glassmorphism Login Card */}
-        <div className="w-full max-w-[420px]">
-          <div className="relative rounded-[2rem] p-[1px] bg-gradient-to-b from-white/20 to-white/0 overflow-hidden shadow-2xl shadow-purple-900/50">
-            {/* Inner Glass Box */}
-            <div className="bg-black/20 backdrop-blur-2xl px-8 py-10 rounded-[calc(2rem-1px)] h-full w-full">
+            <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
               
-              <div className="text-center mb-8">
-                <h2 className="text-2xl font-bold font-syne text-white mb-2">
-                  {isLogin ? "Selamat Datang" : "Mulai Perjalanan"}
-                </h2>
-                <p className="text-sm text-purple-200/70">
-                  {isLogin ? "Masuk ke akun MILKUN.AI Anda" : "Buat akun pintar pertama Anda"}
-                </p>
-              </div>
-
-              {errorMsg && (
-                <div className="bg-red-500/10 border border-red-500/20 text-red-200 p-3 rounded-xl mb-6 text-sm text-center flex justify-center items-center gap-2 backdrop-blur-md">
-                   {errorMsg}
-                </div>
+              {!isLogin && (
+                <input className="min-inp" type="text" required value={name}
+                  onChange={e => setName(e.target.value)} placeholder="Nama lengkap"/>
               )}
 
-              <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-                {!isLogin && (
-                  <div>
-                    <label className="text-sm font-semibold text-purple-100/90 mb-2 block ml-1">Nama Panggilan</label>
-                    <div className="group relative">
-                      <input
-                        type="text"
-                        required
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                        className="w-full px-5 py-3.5 bg-white/5 border border-white/10 rounded-2xl focus:outline-none focus:border-pink-500/50 focus:bg-white/10 hover:bg-white/10 transition-all text-white placeholder-white/30"
-                        placeholder="Contoh: Budi, Alice"
-                      />
-                    </div>
-                  </div>
-                )}
+              <input className="min-inp" type="email" required value={email}
+                onChange={e => setEmail(e.target.value)} placeholder="Alamat email"/>
 
-                <div>
-                  <label className="text-sm font-semibold text-purple-100/90 mb-2 block ml-1">Email Address</label>
-                  <div className="group relative">
-                    <input
-                      type="email"
-                      required
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="w-full px-5 py-3.5 bg-white/5 border border-white/10 rounded-2xl focus:outline-none focus:border-pink-500/50 focus:bg-white/10 hover:bg-white/10 transition-all text-white placeholder-white/30"
-                      placeholder="nama@email.com"
-                    />
-                  </div>
-                </div>
+              <input className="min-inp" type="password" required value={password}
+                onChange={e => setPassword(e.target.value)} placeholder="Password" minLength={6}/>
 
-                <div>
-                  <label className="text-sm font-semibold text-purple-100/90 mb-2 block ml-1">Password</label>
-                  <input
-                    type="password"
-                    required
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="w-full px-5 py-3.5 bg-white/5 border border-white/10 rounded-2xl focus:outline-none focus:border-pink-500/50 focus:bg-white/10 hover:bg-white/10 transition-all text-white placeholder-white/30"
-                    placeholder="••••••••"
-                    minLength={6}
-                  />
-                </div>
+              <button type="submit" disabled={loading} className="min-btn" style={{ marginTop: "8px" }}>
+                {loading
+                  ? <span style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}>
+                      <Loader2 size={16} className="animate-spin"/> Memproses...
+                    </span>
+                  : isLogin ? "Lanjutkan" : "Buat Akun"
+                }
+              </button>
+            </form>
 
+            {/* Footer / Toggle */}
+            <div style={{ marginTop: "24px", textAlign: "center" }}>
+              <p style={{ margin: 0, fontSize: "13.5px", color: "#666" }}>
+                {isLogin ? "Belum punya akun? " : "Sudah punya akun? "}
                 <button
-                  type="submit"
-                  disabled={loading}
-                  className="group relative w-full py-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-2xl font-bold text-lg mt-4 hover:shadow-[0_0_20px_rgba(236,72,153,0.4)] transition-all overflow-hidden flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
-                >
-                  <div className="absolute inset-0 bg-white/20 group-hover:translate-x-full -translate-x-full skew-x-12 transition-transform duration-500 ease-in-out" />
-                  {loading ? (
-                    <><Loader2 className="w-5 h-5 animate-spin" /> Memproses...</>
-                  ) : (
-                    <>{isLogin ? "Masuk ke Dashboard" : "Daftar Akun"} <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" /></>
-                  )}
-                </button>
-              </form>
-
-              <div className="mt-8 text-center text-sm text-purple-200/50">
-                {isLogin ? "Pengguna baru?" : "Sudah ahli?"}{" "}
-                <button
-                  onClick={() => {
-                    setIsLogin(!isLogin);
-                    setErrorMsg("");
+                  type="button"
+                  onClick={() => { setIsLogin(!isLogin); setErrorMsg(""); setSuccessMsg(""); }}
+                  style={{
+                    background: "none", border: "none", cursor: "pointer",
+                    color: "#E8132B", fontWeight: 600, fontSize: "13.5px",
+                    fontFamily: "inherit", padding: 0, textDecoration: "underline",
+                    textUnderlineOffset: "4px"
                   }}
-                  className="text-pink-300 font-bold hover:text-pink-200 transition-colors"
                 >
-                  {isLogin ? "Daftar Sekarang" : "Masuk di Sini"}
+                  {isLogin ? "Daftar sekarang" : "Masuk"}
                 </button>
-              </div>
-
+              </p>
             </div>
+
           </div>
         </div>
-        
+
       </div>
     </div>
   );

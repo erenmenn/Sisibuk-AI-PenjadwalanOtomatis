@@ -8,12 +8,15 @@ import {
   getDay
 } from "date-fns";
 import { id } from "date-fns/locale";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  ChevronLeft, ChevronRight, Clock, CheckCircle2,
+  CalendarDays, Circle
+} from "lucide-react";
 
 const DAY_NAMES = ["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"];
 
 export default function CalendarView() {
-  const { schedules, classSchedules, setView } = useAppStore();
+  const { schedules, classSchedules } = useAppStore();
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selected, setSelected] = useState<Date | null>(new Date());
 
@@ -30,9 +33,10 @@ export default function CalendarView() {
         title: s.title,
         type: s.type,
         color: (INTENT_LABELS[s.type] || INTENT_LABELS.UNKNOWN).color,
-        emoji: (INTENT_LABELS[s.type] || INTENT_LABELS.UNKNOWN).emoji,
+        label: (INTENT_LABELS[s.type] || INTENT_LABELS.UNKNOWN).label,
         time: s.deadlineAt ? format(new Date(s.deadlineAt), "HH:mm") : null,
         isCompleted: s.isCompleted,
+        isClass: false,
       }));
 
     const dayOfWeek = getDay(day) === 0 ? 7 : getDay(day);
@@ -42,120 +46,101 @@ export default function CalendarView() {
         id: c.id,
         title: c.subjectName,
         type: "CLASS" as const,
-        color: c.color || "#7C3AED",
-        emoji: "🏫",
+        color: c.color || "#6C63FF",
+        label: "Kuliah",
         time: c.startTime,
         isCompleted: false,
+        isClass: true,
       }));
 
-    // Class first, then sorted by urgency
     return [...clsEvents, ...schEvents];
   };
 
   const selectedEvents = selected ? getEventsForDay(selected) : [];
   const monthEvents = schedules.filter(s => s.deadlineAt && isSameMonth(new Date(s.deadlineAt), currentMonth));
 
-  // Legend config
-  const LEGEND = [
-    { label: "Kuliah", style: "border-l-[3px] border-blue-500 bg-blue-50 text-blue-800" },
-    { label: "Deadline", style: "bg-red-500 text-white rounded" },
-    { label: "Ujian ⚠️", style: "bg-purple-500 text-white rounded" },
-    { label: "Belajar", style: "border border-dashed border-blue-400 text-blue-500 rounded" },
-  ];
-
   return (
     <div className="flex h-full bg-transparent overflow-hidden rounded-3xl">
 
       {/* ─── Left: Calendar Grid ─── */}
-      <div className="flex-1 flex flex-col overflow-hidden bg-white/20 backdrop-blur-md border-r border-white/40">
+      <div className="flex-1 flex flex-col overflow-hidden bg-white/20 backdrop-blur-md border-r border-white/30">
 
-        {/* Month Nav + Legend */}
-        <div className="flex items-center justify-between px-8 py-4 border-b border-white/40 shrink-0">
+        {/* Header: Month + Navigation only */}
+        <div className="flex items-center justify-between px-7 py-5 border-b border-white/30 shrink-0">
           <div>
-            <h2 className="text-2xl font-display font-bold text-[var(--color-text-primary)]">
+            <h2 className="text-2xl font-black text-[#1a1a2e] tracking-tight leading-none">
               {format(currentMonth, "MMMM", { locale: id })}
             </h2>
-            <p className="text-sm text-[var(--color-text-secondary)]">{format(currentMonth, "yyyy")}</p>
-          </div>
-
-          {/* Visual legend */}
-          <div className="hidden md:flex items-center gap-3 text-[9px] font-bold text-[var(--color-text-secondary)]">
-            <span className="uppercase tracking-wider">Keterangan:</span>
-            {/* CLASS */}
-            <div className="flex items-center gap-1">
-              <div className="h-3 w-4 rounded-sm flex overflow-hidden">
-                <div className="w-1 bg-[#7C3AED]" />
-                <div className="flex-1 bg-[#7C3AED]/15" />
-              </div>
-              <span className="text-[#7C3AED]">Kuliah</span>
-            </div>
-            {/* DEADLINE */}
-            <div className="flex items-center gap-1">
-              <div className="h-3 w-4 bg-[#EF4444] rounded-sm" />
-              <span className="text-[#EF4444]">🔴 Deadline</span>
-            </div>
-            {/* EXAM */}
-            <div className="flex items-center gap-1">
-              <div className="h-3 w-4 bg-[#8B5CF6] rounded-sm" />
-              <span className="text-[#8B5CF6]">⚠️ Ujian</span>
-            </div>
-            {/* STUDY */}
-            <div className="flex items-center gap-1">
-              <div className="h-3 w-4 rounded-sm border border-dashed border-[#3B82F6]" />
-              <span className="text-[#3B82F6]">📚 Belajar</span>
-            </div>
+            <p className="text-xs font-bold text-slate-400 mt-0.5 tracking-widest">
+              {format(currentMonth, "yyyy")}
+            </p>
           </div>
 
           <div className="flex items-center gap-2">
-            <button onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
-              className="w-9 h-9 rounded-xl bg-[var(--color-neutral)] border border-[var(--color-border)] flex items-center justify-center hover:border-[#7C3AED] hover:text-[#7C3AED] transition-all">
-              <ChevronLeft size={18} />
+            <button
+              onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
+              className="w-9 h-9 rounded-xl bg-white/60 border border-white/80 flex items-center justify-center text-slate-500 hover:text-rose-500 hover:border-rose-200 hover:bg-rose-50/50 transition-all shadow-sm"
+            >
+              <ChevronLeft size={16} />
             </button>
-            <button onClick={() => setCurrentMonth(new Date())}
-              className="px-4 py-2 text-xs font-bold border border-[#7C3AED] text-[#7C3AED] hover:bg-[#7C3AED] hover:text-white rounded-xl transition-all">
+            <button
+              onClick={() => setCurrentMonth(new Date())}
+              className="px-4 py-2 text-[11px] font-black border border-rose-200 text-rose-500 hover:bg-rose-500 hover:text-white rounded-xl transition-all tracking-wide"
+            >
               Hari Ini
             </button>
-            <button onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
-              className="w-9 h-9 rounded-xl bg-[var(--color-neutral)] border border-[var(--color-border)] flex items-center justify-center hover:border-[#7C3AED] hover:text-[#7C3AED] transition-all">
-              <ChevronRight size={18} />
+            <button
+              onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
+              className="w-9 h-9 rounded-xl bg-white/60 border border-white/80 flex items-center justify-center text-slate-500 hover:text-rose-500 hover:border-rose-200 hover:bg-rose-50/50 transition-all shadow-sm"
+            >
+              <ChevronRight size={16} />
             </button>
           </div>
         </div>
 
         {/* Day Headers */}
-        <div className="grid grid-cols-7 pb-2 shrink-0 px-4">
+        <div className="grid grid-cols-7 px-4 pt-3 pb-1 shrink-0">
           {DAY_NAMES.map(d => (
-            <div key={d} className="text-center text-[10px] font-black text-purple-900 uppercase tracking-widest opacity-80">
+            <div key={d} className="text-center text-[10px] font-black text-slate-400 uppercase tracking-widest">
               {d}
             </div>
           ))}
         </div>
 
-        {/* Calendar Grid - Borderless Gap Layout */}
-        <div className="grid grid-cols-7 gap-2 flex-1 overflow-auto px-4 pb-4">
+        {/* Calendar Grid */}
+        <div className="grid grid-cols-7 gap-1.5 flex-1 overflow-auto px-4 pb-4 pt-1">
           {Array.from({ length: startPad }).map((_, i) => (
-            <div key={`pad-${i}`} className="min-h-[100px] rounded-2xl bg-white/5 border border-white/10" />
+            <div key={`pad-${i}`} className="min-h-[90px] rounded-2xl bg-white/5" />
           ))}
 
           {days.map(day => {
-            const events   = getEventsForDay(day);
+            const events     = getEventsForDay(day);
+            const clsEvents  = events.filter(e => e.isClass);
+            const schEvents  = events.filter(e => !e.isClass);
             const isSelected = selected && isSameDay(day, selected);
             const isCurrent  = isToday(day);
+            const maxPills   = 2;
+            const overflow   = schEvents.length - maxPills;
 
             return (
               <div
                 key={day.toISOString()}
                 onClick={() => setSelected(day)}
-                className={`min-h-[100px] rounded-2xl p-2 cursor-pointer transition-all relative group backdrop-blur-[10px] shadow-sm border
-                  ${isSelected ? "bg-white/40 border-white/60 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.8)] opacity-100 scale-[1.02] z-10" : "bg-white/20 border-white/30 hover:bg-white/30 opacity-90"}
+                className={`min-h-[90px] rounded-2xl p-2 cursor-pointer transition-all relative group flex flex-col border
+                  ${isSelected
+                    ? "bg-white/60 border-rose-200 shadow-[0_4px_20px_rgba(244,63,94,0.12)] scale-[1.02] z-10"
+                    : "bg-white/20 border-white/30 hover:bg-white/35 hover:border-white/50"
+                  }
                 `}
               >
-                {/* ── DOTS FOR CLASSES (TOP RIGHT) ── */}
-                {events.filter(e => e.type === "CLASS").length > 0 && (
-                  <div className="absolute top-2 right-2 flex gap-1 z-20">
-                    {events.filter(e => e.type === "CLASS").map(cls => (
-                      <div key={cls.id} title={`Kuliah: ${cls.title}\n⏰ ${cls.time || "Sesuai Jadwal"}`}
-                        className="w-2.5 h-2.5 rounded-full shadow-[inset_0_2px_4px_rgba(255,255,255,0.8),_0_2px_6px_rgba(0,0,0,0.2)] cursor-help hover:scale-[2] transition-transform border border-white/60"
+                {/* Class dots — top right */}
+                {clsEvents.length > 0 && (
+                  <div className="absolute top-2 right-2 flex gap-0.5 flex-wrap justify-end max-w-[40px]">
+                    {clsEvents.slice(0, 4).map(cls => (
+                      <div
+                        key={cls.id}
+                        title={cls.title}
+                        className="w-2 h-2 rounded-full border border-white/70 shadow-sm"
                         style={{ backgroundColor: cls.color }}
                       />
                     ))}
@@ -163,35 +148,35 @@ export default function CalendarView() {
                 )}
 
                 {/* Day number */}
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-black transition-colors relative z-10
-                  ${isCurrent ? "bg-gradient-to-br from-[#7C3AED] to-[#EC4899] text-white shadow-[0_4px_15px_rgba(124,58,237,0.5)] scale-110 border border-white/50" : isSelected ? "bg-purple-600/90 text-white shadow-md border border-white/40" : "text-purple-950 group-hover:text-[#7C3AED]"}
+                <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-black shrink-0 transition-all
+                  ${isCurrent
+                    ? "bg-gradient-to-br from-rose-500 to-orange-400 text-white shadow-[0_4px_14px_rgba(244,63,94,0.4)]"
+                    : isSelected
+                    ? "bg-rose-100 text-rose-600"
+                    : "text-slate-700 group-hover:text-rose-500"
+                  }
                 `}>
                   {format(day, "d")}
                 </div>
 
-                {/* ── EVENT CHIPS (TASKS/EXAMS) ── */}
-                <div className="flex flex-col gap-1 px-0.5 relative z-10 w-full mt-auto mb-0">
-                  {/* TASKS/EXAMS/OTHER AS TINY PILLS */}
-                  {events.filter(e => e.type !== "CLASS").slice(0, 3).map((ev) => {
-                    const isExam  = ev.type === "EXAM";
-                    return (
-                      <div key={ev.id} title={ev.title}
-                        className="text-[9px] font-black px-1.5 py-[3px] truncate leading-tight rounded-[6px] text-white flex items-center gap-1 transition-transform hover:scale-105 cursor-pointer border border-white/40 shadow-sm"
-                        style={{
-                          backgroundColor: ev.color,
-                          backgroundImage: `linear-gradient(135deg, rgba(255,255,255,0.3) 0%, rgba(0,0,0,0) 100%)`,
-                        }}
-                      >
-                         {isExam && <span className="text-[8px] shrink-0">⚠️</span>}
-                         <span className="truncate drop-shadow-sm opacity-95">{ev.title}</span>
-                      </div>
-                    );
-                  })}
-                  
-                  {/* OVERFLOW INDICATOR FOR TASKS */}
-                  {events.filter(e => e.type !== "CLASS").length > 3 && (
-                    <div className="text-[8px] font-black text-purple-800 bg-white/70 backdrop-blur-md rounded-full px-1.5 py-[2px] w-max border border-white/60 shadow-sm ml-0.5">
-                      +{events.filter(e => e.type !== "CLASS").length - 3} Tugas
+                {/* Event pills */}
+                <div className="flex flex-col gap-0.5 mt-1.5 flex-1">
+                  {schEvents.slice(0, maxPills).map(ev => (
+                    <div
+                      key={ev.id}
+                      title={ev.title}
+                      className={`text-[8.5px] font-bold px-1.5 py-[2px] truncate rounded-[5px] leading-tight text-white transition-all
+                        ${ev.isCompleted ? "opacity-40 line-through" : ""}
+                      `}
+                      style={{ backgroundColor: ev.color }}
+                    >
+                      {ev.title}
+                    </div>
+                  ))}
+
+                  {overflow > 0 && (
+                    <div className="text-[8px] font-black text-slate-500 px-1 mt-0.5">
+                      +{overflow} lainnya
                     </div>
                   )}
                 </div>
@@ -201,62 +186,89 @@ export default function CalendarView() {
         </div>
       </div>
 
-      {/* ─── Right: Selected Day Detail ─── */}
-      <div className="w-80 flex flex-col bg-white/30 backdrop-blur-lg overflow-hidden shrink-0 border-l border-white/50">
-        <div className="px-6 pt-8 pb-6 border-b border-white/40">
-          <p className="text-[10px] font-bold text-purple-800 uppercase tracking-wider">
+      {/* ─── Right Panel ─── */}
+      <div className="w-[280px] flex flex-col bg-white/30 backdrop-blur-xl shrink-0 border-l border-white/40 overflow-hidden">
+
+        {/* Selected date header */}
+        <div className="px-6 pt-7 pb-5 border-b border-white/30 shrink-0">
+          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">
             {selected ? format(selected, "EEEE", { locale: id }) : "Pilih tanggal"}
           </p>
-          <div className="flex items-center gap-3">
-            <h3 className="text-5xl font-display font-black text-purple-950 mt-1 drop-shadow-sm">
+          <div className="flex items-end gap-3">
+            <p className="text-[52px] font-black text-[#1a1a2e] leading-none">
               {selected ? format(selected, "d") : "--"}
-            </h3>
+            </p>
             {selected && isToday(selected) && (
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#7C3AED] to-[#EC4899] flex items-center justify-center text-white shadow-lg text-lg animate-bounce">
-                ✨
-              </div>
+              <span className="text-[11px] font-black text-rose-500 bg-rose-50 border border-rose-200 px-2.5 py-1 rounded-full mb-2">
+                Hari Ini
+              </span>
             )}
           </div>
-          <p className="text-sm text-purple-900 font-bold mt-1">
+          <p className="text-xs font-bold text-slate-400 mt-1">
             {selected ? format(selected, "MMMM yyyy", { locale: id }) : ""}
           </p>
         </div>
 
-        {/* Events for selected day */}
-        <div className="flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-3">
+        {/* Events list */}
+        <div className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-2 custom-scrollbar">
           {selectedEvents.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-32 text-purple-800/60 text-center">
-              <p className="text-4xl mb-2 grayscale opacity-50">☀️</p>
-              <p className="text-sm font-bold">Tidak ada jadwal</p>
+            <div className="flex flex-col items-center justify-center h-36 text-center">
+              <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mb-3">
+                <CalendarDays size={20} className="text-slate-300" />
+              </div>
+              <p className="text-sm font-bold text-slate-400">Tidak ada jadwal</p>
+              <p className="text-xs text-slate-300 mt-0.5">Hari ini bebas!</p>
             </div>
           ) : (
             selectedEvents.map(ev => {
-              const isClass = ev.type === "CLASS";
-              const isExam  = ev.type === "EXAM";
-              const isDeadline = ["DEADLINE_SUBMIT","DEADLINE_PROPOSAL","DEADLINE_REGISTER"].includes(ev.type);
-              const isStudy = ev.type === "STUDY_PLAN" || ev.type === "STUDY_SESSION";
+              const isClass    = ev.isClass;
+              const isDone     = ev.isCompleted;
 
               return (
-                <div key={ev.id}
-                  className={`rounded-2xl overflow-hidden glass-panel hover:scale-[1.02] transition-transform`}
-                  style={{ 
-                    borderLeft: `6px solid ${ev.color}`, 
-                    background: `linear-gradient(90deg, ${ev.color}15 0%, rgba(255,255,255,0.4) 100%)` 
+                <div
+                  key={ev.id}
+                  className={`rounded-[16px] overflow-hidden border transition-all hover:shadow-md
+                    ${isDone ? "opacity-50" : ""}
+                  `}
+                  style={{
+                    borderColor: `${ev.color}30`,
+                    background: `linear-gradient(135deg, ${ev.color}10 0%, rgba(255,255,255,0.6) 100%)`,
                   }}
                 >
-                  <div className="p-3 flex gap-3 items-center">
-                    <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl shrink-0 shadow-[0_4px_12px_rgba(0,0,0,0.1)] border border-white/60"
-                      style={{ 
-                        backgroundColor: ev.color, 
-                        backgroundImage: `linear-gradient(135deg, rgba(255,255,255,0.4) 0%, rgba(0,0,0,0) 100%)`,
-                        color: "white" 
-                      }}>
-                      {isClass ? "🏫" : isExam ? "⚠️" : isDeadline ? "🔴" : ev.emoji}
-                    </div>
+                  <div className="flex items-center gap-3 px-3.5 py-3">
+                    {/* Color bar */}
+                    <div
+                      className="w-1 self-stretch rounded-full shrink-0"
+                      style={{ backgroundColor: ev.color }}
+                    />
+
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-black text-purple-950 leading-tight line-clamp-2 drop-shadow-sm">{ev.title}</p>
-                      {ev.time && <p className="text-[10px] text-purple-800 mt-1 font-bold">🕐 {ev.time}</p>}
+                      <p className={`text-[12px] font-bold text-[#1a1a2e] leading-tight truncate
+                        ${isDone ? "line-through" : ""}
+                      `}>
+                        {ev.title}
+                      </p>
+                      <div className="flex items-center gap-1.5 mt-1">
+                        <span
+                          className="text-[9px] font-black px-1.5 py-0.5 rounded-full"
+                          style={{ color: ev.color, backgroundColor: `${ev.color}15` }}
+                        >
+                          {ev.label}
+                        </span>
+                        {ev.time && ev.time !== "00:00" && (
+                          <span className="flex items-center gap-0.5 text-[9px] font-bold text-slate-400">
+                            <Clock size={9} />
+                            {ev.time}
+                          </span>
+                        )}
+                      </div>
                     </div>
+
+                    {isDone ? (
+                      <CheckCircle2 size={16} className="text-emerald-400 shrink-0" />
+                    ) : (
+                      <Circle size={14} className="text-slate-200 shrink-0" />
+                    )}
                   </div>
                 </div>
               );
@@ -264,22 +276,22 @@ export default function CalendarView() {
           )}
         </div>
 
-        {/* Month summary strip */}
-        <div className="border-t border-white/40 px-5 py-4 bg-white/20">
-          <p className="text-[10px] font-black text-purple-900 uppercase tracking-widest mb-3">Bulan ini</p>
-          <div className="flex gap-2 text-center">
-            <div className="flex-1 glass-surface rounded-2xl py-2.5">
-              <p className="text-xl font-black text-[#7C3AED] drop-shadow-sm">{monthEvents.length}</p>
-              <p className="text-[9px] font-bold text-purple-800 uppercase mt-0.5">Total</p>
-            </div>
-            <div className="flex-1 glass-surface rounded-2xl py-2.5">
-              <p className="text-xl font-black text-[#10B981] drop-shadow-sm">{monthEvents.filter(s=>s.isCompleted).length}</p>
-              <p className="text-[9px] font-bold text-purple-800 uppercase mt-0.5">Selesai</p>
-            </div>
-            <div className="flex-1 glass-surface rounded-2xl py-2.5">
-              <p className="text-xl font-black text-[#F97316] drop-shadow-sm">{monthEvents.filter(s=>!s.isCompleted).length}</p>
-              <p className="text-[9px] font-bold text-purple-800 uppercase mt-0.5">Aktif</p>
-            </div>
+        {/* Month summary */}
+        <div className="border-t border-white/40 px-4 py-4 bg-white/20 shrink-0">
+          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">
+            Bulan Ini
+          </p>
+          <div className="grid grid-cols-3 gap-2">
+            {[
+              { val: monthEvents.length,                        label: "Total",   color: "text-violet-600", bg: "bg-violet-50" },
+              { val: monthEvents.filter(s=>s.isCompleted).length, label: "Selesai", color: "text-emerald-600", bg: "bg-emerald-50" },
+              { val: monthEvents.filter(s=>!s.isCompleted).length, label: "Aktif",  color: "text-rose-600",    bg: "bg-rose-50" },
+            ].map(({ val, label, color, bg }) => (
+              <div key={label} className={`${bg} rounded-2xl py-3 text-center`}>
+                <p className={`text-xl font-black ${color}`}>{val}</p>
+                <p className="text-[9px] font-bold text-slate-400 uppercase mt-0.5">{label}</p>
+              </div>
+            ))}
           </div>
         </div>
       </div>
